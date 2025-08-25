@@ -1,0 +1,292 @@
+<script setup>
+import { ref, onMounted } from 'vue';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { client } from '@composables/client';
+import { useToast } from '@composables/toast';
+
+const toaster = useToast();
+const quizzes = ref([]);
+const loading = ref(true);
+
+onMounted(async () => {
+  try {
+    if (!client.session?.batch_id) {
+      toaster.addToast('No batch assigned to your account. Please contact administrator.', 'error');
+      loading.value = false;
+      return;
+    }
+
+    // Fetch quizzes for student's batch
+    const quizzesQuery = query(
+      collection(client.firestore, 'quizzes'),
+      where('batchId', '==', client.session.batch_id),
+      where('isActive', '==', true)
+    );
+    
+    const quizzesSnapshot = await getDocs(quizzesQuery);
+    quizzes.value = quizzesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    loading.value = false;
+  } catch (error) {
+    console.error('Error fetching quizzes:', error);
+    toaster.addToast('Failed to load quizzes', 'error');
+    loading.value = false;
+  }
+});
+
+const formatTimeLimit = (minutes) => {
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  }
+  return `${minutes}m`;
+};
+</script>
+
+<template>
+  <div class="student-dashboard">
+    <Head title="Quiz Contests" />
+    
+    <h1>Available Quiz Contests</h1>
+    <p v-if="client.session">Welcome, {{ client.session.displayName }}! Here are the quiz contests available for your batch.</p>
+
+    <div v-if="loading" class="loading">
+      <p>Loading quiz contests...</p>
+    </div>
+
+    <div v-else-if="!client.session?.batch_id" class="no-batch">
+      <h2>No Batch Assigned</h2>
+      <p>Your account is not assigned to any batch. Please contact your administrator to get access to quiz contests.</p>
+    </div>
+
+    <div v-else-if="quizzes.length === 0" class="no-quizzes">
+      <h2>No Quiz Contests Available</h2>
+      <p>There are currently no active quiz contests for your batch. Check back later!</p>
+    </div>
+
+    <div v-else class="quizzes-container">
+      <div class="quizzes-grid">
+        <details v-for="quiz in quizzes" :key="quiz.id" name="available-quizzes" class="quiz-card">
+          <summary>
+            <div class="quiz-header">
+              <h3>{{ quiz.name }}</h3>
+              <div class="quiz-meta">
+                <span class="time-limit">⏱️ {{ formatTimeLimit(quiz.timeLimit) }}</span>
+                <span class="question-count">📝 {{ quiz.questions?.length || 0 }} questions</span>
+              </div>
+            </div>
+          </summary>
+          
+          <div class="quiz-details">
+            <div class="quiz-description">
+              <h4>Description</h4>
+              <p>{{ quiz.description }}</p>
+            </div>
+
+            <div class="quiz-info">
+              <div class="info-item">
+                <strong>Time Limit:</strong> {{ formatTimeLimit(quiz.timeLimit) }}
+              </div>
+              <div class="info-item">
+                <strong>Total Questions:</strong> {{ quiz.questions?.length || 0 }}
+              </div>
+              <div class="info-item">
+                <strong>Total Points:</strong> 
+                {{ quiz.questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0 }}
+              </div>
+            </div>
+
+            <div class="quiz-instructions">
+              <h4>Instructions</h4>
+              <ul>
+                <li>Read each question carefully before answering</li>
+                <li>You have {{ formatTimeLimit(quiz.timeLimit) }} to complete the quiz</li>
+                <li>The quiz will auto-submit when time runs out</li>
+                <li>Make sure you have a stable internet connection</li>
+                <li>You can only take this quiz once</li>
+              </ul>
+            </div>
+
+            <div class="quiz-actions">
+              <RouterLink 
+                :to="`/quiz/${quiz.id}/take`" 
+                class="start-quiz-btn"
+                role="button"
+              >
+                Start Quiz
+              </RouterLink>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.student-dashboard {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+.no-batch, .no-quizzes {
+  text-align: center;
+  padding: 3rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
+.no-batch h2, .no-quizzes h2 {
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+.quizzes-container {
+  margin-top: 2rem;
+}
+
+.quizzes-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.quiz-card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease;
+}
+
+.quiz-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.quiz-card summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.quiz-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.quiz-card summary::marker {
+  display: none;
+}
+
+.quiz-header h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+}
+
+.quiz-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.quiz-details {
+  padding: 1.5rem;
+  background: white;
+}
+
+.quiz-description {
+  margin-bottom: 1.5rem;
+}
+
+.quiz-description h4 {
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.quiz-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.info-item {
+  font-size: 0.9rem;
+}
+
+.quiz-instructions {
+  margin: 1.5rem 0;
+}
+
+.quiz-instructions h4 {
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.quiz-instructions ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.quiz-instructions li {
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.quiz-actions {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.start-quiz-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+.start-quiz-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.start-quiz-btn:focus {
+  outline: 2px solid #28a745;
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .quiz-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .quiz-info {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

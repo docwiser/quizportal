@@ -32,6 +32,9 @@ console.error(error);
 <nav aria-label="Primary navigation container">
 <ul style="list-style-type:none;">
 <li><RouterLink to="/">Current quiz contests</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/dashboard">Admin Dashboard</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/quiz/create">Create Quiz</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/submissions">View Submissions</RouterLink></li>
 <li><RouterLink to="/stats">Global statistics board</RouterLink></li>
 <li><RouterLink to="/batchstats">Batch-wise stats report</RouterLink></li>
 </ul>
@@ -39,7 +42,9 @@ console.error(error);
 </details>
 <div v-if="client.session">
 <img v-if="client.session?.photoURL" :src="client.session.photoURL" alt="Profile photo" />
-<p>{{client.session.displayName}} ({{client.session.email}})</p>
+<p>{{client.session.displayName}} ({{client.session.email}})
+<span v-if="client.session.role_num > 5" class="admin-badge">Admin</span>
+</p>
 <button @click="signout">Sign out</button>
 </div>
 <div v-else>
@@ -53,4 +58,13 @@ console.error(error);
 <Toaster />
 <RouteAnnouncer />
 </template>
-<style scoped></style>
+<style scoped>
+.admin-badge {
+  background: #4CAF50;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+</style>
