@@ -1,5 +1,6 @@
 <script setup>
-import {onMounted, RouterLink} from "vue";
+import {onMounted} from "vue";
+import {RouterLink} from "vue-router";
 onMounted(() => {
 document.title = "404: page not Found | Saint Josephs Academy";
 });
