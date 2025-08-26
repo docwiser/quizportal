@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { ref, computed, onMounted } from 'vue';
+import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { client } from '@composables/client';
 import { useToast } from '@composables/toast';
 
@@ -8,6 +8,7 @@ const toaster = useToast();
 const quizzes = ref([]);
 const batches = ref([]);
 const loading = ref(true);
+const selectedCategory = ref('all');
 
 onMounted(async () => {
   try {
@@ -36,6 +37,26 @@ onMounted(async () => {
 const getBatchName = (batchId) => {
   const batch = batches.value.find(b => b.id === batchId);
   return batch ? batch.name : 'Unknown Batch';
+};
+
+const filteredQuizzes = computed(() => {
+  if (selectedCategory.value === 'all') {
+    return quizzes.value;
+  }
+  return quizzes.value.filter(quiz => quiz.category === selectedCategory.value);
+});
+
+const deleteQuiz = async (quizId) => {
+  if (confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+    try {
+      await deleteDoc(doc(client.firestore, 'quizzes', quizId));
+      quizzes.value = quizzes.value.filter(quiz => quiz.id !== quizId);
+      toaster.addToast('Quiz deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      toaster.addToast('Failed to delete quiz', 'error');
+    }
+  }
 };
 </script>
 
@@ -79,22 +100,41 @@ const getBatchName = (batchId) => {
 
       <section class="recent-quizzes">
         <h2>Recent Quizzes</h2>
+        <div class="quiz-categories">
+          <div class="category-tabs">
+            <button 
+              v-for="category in ['all', 'mock-test', 'revision-test', 'practice-test']" 
+              :key="category"
+              @click="selectedCategory = category"
+              :class="{ active: selectedCategory === category }"
+              class="category-tab"
+            >
+              {{ category === 'all' ? 'All' : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) }}
+            </button>
+          </div>
+        </div>
         <div v-if="quizzes.length === 0" class="empty-state">
           <p>No quizzes created yet. <RouterLink to="/admin/quiz/create">Create your first quiz</RouterLink></p>
         </div>
         <div v-else class="quiz-list">
-          <details v-for="quiz in quizzes.slice(0, 5)" :key="quiz.id" name="recent-quizzes">
+          <details v-for="quiz in filteredQuizzes.slice(0, 5)" :key="quiz.id" name="recent-quizzes">
             <summary>
-              <strong>{{ quiz.name }}</strong> - {{ getBatchName(quiz.batchId) }}
+              <strong>{{ quiz.name }}</strong> - {{ getBatchName(quiz.batchId) }} 
+              <span class="quiz-category">{{ quiz.category?.replace('-', ' ') || 'General' }}</span>
             </summary>
             <div class="quiz-details">
               <p><strong>Description:</strong> {{ quiz.description }}</p>
+             <p><strong>Category:</strong> {{ quiz.category?.replace('-', ' ') || 'General' }}</p>
               <p><strong>Time Limit:</strong> {{ quiz.timeLimit }} minutes</p>
               <p><strong>Questions:</strong> {{ quiz.questions?.length || 0 }}</p>
+             <p><strong>Negative Marking:</strong> {{ quiz.hasNegativeMarking ? 'Yes' : 'No' }}</p>
               <div class="quiz-actions">
                 <RouterLink :to="`/admin/quiz/${quiz.id}/questions`" class="btn-link">
                   Edit Questions
                 </RouterLink>
+                <button @click="deleteQuiz(quiz.id)" class="btn-delete">
+                  Delete Quiz
+                </button>
               </div>
             </div>
           </details>
@@ -194,6 +234,8 @@ const getBatchName = (batchId) => {
 
 .quiz-actions {
   margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
 }
 
 .btn-link {
@@ -204,6 +246,58 @@ const getBatchName = (batchId) => {
 
 .btn-link:hover {
   text-decoration: underline;
+}
+
+.btn-delete {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.btn-delete:hover {
+  background: #c82333;
+}
+
+.quiz-categories {
+  margin-bottom: 1rem;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.category-tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.category-tab:hover {
+  background: #f8f9fa;
+}
+
+.category-tab.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.quiz-category {
+  background: #6c757d;
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
 }
 
 .empty-state {

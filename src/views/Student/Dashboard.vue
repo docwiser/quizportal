@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { client } from '@composables/client';
 import { useToast } from '@composables/toast';
@@ -7,6 +7,7 @@ import { useToast } from '@composables/toast';
 const toaster = useToast();
 const quizzes = ref([]);
 const loading = ref(true);
+const selectedCategory = ref('all');
 
 onMounted(async () => {
   try {
@@ -45,6 +46,13 @@ const formatTimeLimit = (minutes) => {
   }
   return `${minutes}m`;
 };
+
+const filteredQuizzes = computed(() => {
+  if (selectedCategory.value === 'all') {
+    return quizzes.value;
+  }
+  return quizzes.value.filter(quiz => quiz.category === selectedCategory.value);
+});
 </script>
 
 <template>
@@ -69,14 +77,31 @@ const formatTimeLimit = (minutes) => {
     </div>
 
     <div v-else class="quizzes-container">
+      <div class="quiz-categories">
+        <h3>Quiz Categories</h3>
+        <div class="category-tabs">
+          <button 
+            v-for="category in ['all', 'mock-test', 'revision-test', 'practice-test']" 
+            :key="category"
+            @click="selectedCategory = category"
+            :class="{ active: selectedCategory === category }"
+            class="category-tab"
+          >
+            {{ category === 'all' ? 'All Quizzes' : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) }}
+          </button>
+        </div>
+      </div>
+
       <div class="quizzes-grid">
-        <details v-for="quiz in quizzes" :key="quiz.id" name="available-quizzes" class="quiz-card">
+        <details v-for="quiz in filteredQuizzes" :key="quiz.id" name="available-quizzes" class="quiz-card">
           <summary>
             <div class="quiz-header">
               <h3>{{ quiz.name }}</h3>
+             <div class="quiz-category">{{ quiz.category?.replace('-', ' ') || 'General' }}</div>
               <div class="quiz-meta">
                 <span class="time-limit">⏱️ {{ formatTimeLimit(quiz.timeLimit) }}</span>
                 <span class="question-count">📝 {{ quiz.questions?.length || 0 }} questions</span>
+               <span class="negative-marking">{{ quiz.hasNegativeMarking ? '⚠️ Negative Marking' : '✓ No Negative Marking' }}</span>
               </div>
             </div>
           </summary>
@@ -98,6 +123,12 @@ const formatTimeLimit = (minutes) => {
                 <strong>Total Points:</strong> 
                 {{ quiz.questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0 }}
               </div>
+             <div class="info-item">
+               <strong>Category:</strong> {{ quiz.category?.replace('-', ' ') || 'General' }}
+             </div>
+             <div class="info-item">
+               <strong>Negative Marking:</strong> {{ quiz.hasNegativeMarking ? 'Yes' : 'No' }}
+             </div>
             </div>
 
             <div class="quiz-instructions">
@@ -156,6 +187,42 @@ const formatTimeLimit = (minutes) => {
   margin-top: 2rem;
 }
 
+.quiz-categories {
+  margin-bottom: 2rem;
+}
+
+.quiz-categories h3 {
+  margin-bottom: 1rem;
+  color: #495057;
+}
+
+.category-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.category-tab {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.category-tab:hover {
+  border-color: #007bff;
+  background: #f8f9fa;
+}
+
+.category-tab.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
 .quizzes-grid {
   display: grid;
   gap: 1.5rem;
@@ -194,11 +261,25 @@ const formatTimeLimit = (minutes) => {
   font-size: 1.3rem;
 }
 
+.quiz-category {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
 .quiz-meta {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   font-size: 0.9rem;
   opacity: 0.9;
+  flex-wrap: wrap;
+}
+
+.negative-marking {
+  color: #ffc107;
 }
 
 .quiz-details {
@@ -217,7 +298,7 @@ const formatTimeLimit = (minutes) => {
 
 .quiz-info {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   margin: 1.5rem 0;
   padding: 1rem;

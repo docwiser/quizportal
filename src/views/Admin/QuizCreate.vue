@@ -26,6 +26,18 @@ const quizSchema = ref([
     help: 'Provide details about the quiz content and objectives'
   },
   {
+    name: 'category',
+    type: 'select',
+    label: 'Quiz Category',
+    required: true,
+    options: [
+      { value: 'mock-test', label: 'Mock Test' },
+      { value: 'revision-test', label: 'Revision Test' },
+      { value: 'practice-test', label: 'Practice Test' }
+    ],
+    help: 'Select the type of quiz'
+  },
+  {
     name: 'batchId',
     type: 'select',
     label: 'Target Batch',
@@ -42,6 +54,13 @@ const quizSchema = ref([
     max: 180,
     value: 30,
     help: 'Quiz will auto-submit after this time'
+  },
+  {
+    name: 'hasNegativeMarking',
+    type: 'checkbox',
+    label: 'Enable Negative Marking',
+    value: [true],
+    help: 'Check to enable negative marking for wrong answers'
   },
   {
     name: 'submit',
@@ -78,8 +97,10 @@ const handleSubmit = async (formData) => {
     const quizData = {
       name: formData.name,
       description: formData.description,
+      category: formData.category,
       batchId: formData.batchId,
       timeLimit: parseInt(formData.timeLimit),
+      hasNegativeMarking: formData.hasNegativeMarking && formData.hasNegativeMarking.length > 0,
       questions: [],
       createdBy: client.session.uid,
       createdAt: new Date(),
