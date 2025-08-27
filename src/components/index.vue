@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <div class="features-section">
+  <div class="features-section" v-if="!client.session">
     <h3>Platform Features</h3>
     <div class="features-grid">
       <div class="feature-card">
@@ -62,6 +62,60 @@
         <div class="feature-icon">🏆</div>
         <h4>Batch Competition</h4>
         <p>Compete with classmates in your batch</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Features -->
+  <div v-else-if="client.session.role_num > 5" class="features-section">
+    <h3>Admin Features</h3>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h4>Quiz Management</h4>
+        <p>Create, edit, and manage quiz contests for different batches</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h4>Submission Analytics</h4>
+        <p>View detailed student submissions and performance analytics</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h4>Batch Management</h4>
+        <p>Organize students into batches and assign quiz access</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h4>Progress Reports</h4>
+        <p>Generate comprehensive reports on student performance</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Features -->
+  <div v-else class="features-section">
+    <h3>Student Features</h3>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h4>Bilingual Support</h4>
+        <p>Take quizzes in English or Hindi as per your preference</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h4>Mobile Friendly</h4>
+        <p>Responsive design works perfectly on all devices</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⏰</div>
+        <h4>Real-time Timer</h4>
+        <p>Live countdown timer with auto-submit functionality</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📄</div>
+        <h4>Result PDF</h4>
+        <p>Download detailed result reports in PDF format</p>
       </div>
     </div>
   </div>

@@ -11,16 +11,24 @@ const selectedCategory = ref('all');
 
 onMounted(async () => {
   try {
-    if (!client.session?.batch_id) {
-      toaster.addToast('No batch assigned to your account. Please contact administrator.', 'error');
+    // Get all batches where user is included
+    const batchesQuery = query(
+      collection(client.firestore, 'batches'),
+      where('users', 'array-contains', client.session.uid)
+    );
+    const batchesSnapshot = await getDocs(batchesQuery);
+    const userBatches = batchesSnapshot.docs.map(doc => doc.id);
+    
+    if (userBatches.length === 0) {
+      toaster.addToast('No batches assigned to your account. Please contact administrator.', 'error');
       loading.value = false;
       return;
     }
 
-    // Fetch quizzes for student's batch
+    // Fetch quizzes for user's batches
     const quizzesQuery = query(
       collection(client.firestore, 'quizzes'),
-      where('batchId', '==', client.session.batch_id),
+      where('batchId', 'in', userBatches),
       where('isActive', '==', true)
     );
     

@@ -92,16 +92,22 @@ const formatTimestamp = (timestamp) => {
   return date.toLocaleString();
 };
 
-const getAnswerText = (question, answer) => {
+const getAnswerText = (question, answer, language = 'english') => {
   if (question.type === 'multiple-choice' && question.options) {
     const optionIndex = parseInt(answer);
-    return question.options[optionIndex] || answer;
+    const option = question.options[optionIndex];
+    if (option) {
+      return option[language] || option.english || option.hindi || answer;
+    }
   }
   return answer;
 };
 
 const isCorrectAnswer = (question, answer) => {
   if (question.type === 'multiple-choice') {
+    return parseInt(answer) === question.correctAnswer;
+  }
+  if (question.type === 'true-false') {
     return answer === question.correctAnswer;
   }
   // For other types, manual checking would be needed
@@ -179,16 +185,22 @@ const isCorrectAnswer = (question, answer) => {
                 <div v-for="(answer, index) in submission.answers" :key="index" class="answer-item">
                   <div class="question-info">
                     <h4>Question {{ index + 1 }}</h4>
-                    <p class="question-text">{{ getQuizQuestions(submission.quizId)[index]?.text || 'Question not found' }}</p>
+                    <p class="question-text">
+                      {{ getQuizQuestions(submission.quizId)[index]?.text?.english || 
+                         getQuizQuestions(submission.quizId)[index]?.text?.hindi || 
+                         'Question not found' }}
+                    </p>
                   </div>
                   
                   <div class="answer-info">
-                    <p><strong>Student Answer:</strong> {{ getAnswerText(getQuizQuestions(submission.quizId)[index], answer.studentAnswer) }}</p>
+                    <p><strong>Student Answer:</strong> 
+                      {{ getAnswerText(getQuizQuestions(submission.quizId)[index], answer.studentAnswer, submission.language) }}
+                    </p>
                     
                     <div v-if="getQuizQuestions(submission.quizId)[index]" class="correct-answer">
                       <p><strong>Correct Answer:</strong> 
                         <span v-if="getQuizQuestions(submission.quizId)[index].type === 'multiple-choice'">
-                          {{ getQuizQuestions(submission.quizId)[index].options[getQuizQuestions(submission.quizId)[index].correctAnswer] }}
+                          {{ getAnswerText(getQuizQuestions(submission.quizId)[index], getQuizQuestions(submission.quizId)[index].correctAnswer, submission.language) }}
                         </span>
                         <span v-else>
                           {{ getQuizQuestions(submission.quizId)[index].correctAnswer }}
