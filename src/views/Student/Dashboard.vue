@@ -74,11 +74,6 @@ const filteredQuizzes = computed(() => {
       <p>Loading quiz contests...</p>
     </div>
 
-    <div v-else-if="!client.session?.batch_id" class="no-batch">
-      <h2>No Batch Assigned</h2>
-      <p>Your account is not assigned to any batch. Please contact your administrator to get access to quiz contests.</p>
-    </div>
-
     <div v-else-if="quizzes.length === 0" class="no-quizzes">
       <h2>No Quiz Contests Available</h2>
       <p>There are currently no active quiz contests for your batch. Check back later!</p>
@@ -178,7 +173,7 @@ const filteredQuizzes = computed(() => {
   padding: 2rem;
 }
 
-.no-batch, .no-quizzes {
+.no-quizzes {
   text-align: center;
   padding: 3rem;
   background: #f8f9fa;
@@ -186,7 +181,7 @@ const filteredQuizzes = computed(() => {
   margin: 2rem 0;
 }
 
-.no-batch h2, .no-quizzes h2 {
+.no-quizzes h2 {
   color: #495057;
   margin-bottom: 1rem;
 }

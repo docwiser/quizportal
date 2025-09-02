@@ -35,8 +35,10 @@ console.error(error);
 <li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/dashboard">Admin Dashboard</RouterLink></li>
 <li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/quiz/create">Create Quiz</RouterLink></li>
 <li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/submissions">View Submissions</RouterLink></li>
+<!--
 <li><RouterLink to="/stats">Global statistics board</RouterLink></li>
 <li><RouterLink to="/batchstats">Batch-wise stats report</RouterLink></li>
+-->
 </ul>
 </nav>
 </details>
