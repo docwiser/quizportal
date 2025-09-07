@@ -32,7 +32,7 @@ onMounted(async () => {
         addQuestion();
       }
     } else {
-      toaster.addToast('Quiz not found', 'error');
+      toaster.addToast('Test not found', 'error');
       router.push('/admin/dashboard');
     }
     loading.value = false;
@@ -113,7 +113,7 @@ const saveQuiz = async () => {
       updatedAt: new Date()
     });
 
-    toaster.addToast('Quiz saved successfully!', 'success');
+    toaster.addToast('Test saved successfully!', 'success');
     router.push('/admin/dashboard');
   } catch (error) {
     console.error('Error saving quiz:', error);
@@ -127,15 +127,15 @@ const saveQuiz = async () => {
     <Head title="Add Questions" />
     
     <div v-if="loading" class="loading">
-      <p>Loading quiz...</p>
+      <p>Loading test...</p>
     </div>
 
     <div v-else>
       <h1>Add Questions to "{{ quiz?.name }}"</h1>
-      <p>Create questions for your quiz. Students will see these in the order you create them.</p>
+      <p>Create questions for your test. Students will see these in the order you create them.</p>
 
-      <div class="questions-container">
-        <div v-for="(question, questionIndex) in questions" :key="question.id" class="question-editor">
+      <div class="questions-container" role="region" aria-label="Question editor panel">
+        <div v-for="(question, questionIndex) in questions" :key="question.id" class="question-editor" role="group" :aria-label="'Question ' + (questionIndex+1) + ' of ' + questions.length">
           <div class="question-header">
             <h3>Question {{ questionIndex + 1 }}</h3>
             <button 
@@ -193,7 +193,7 @@ const saveQuiz = async () => {
                   v-model.number="question.points" 
                   class="form-control"
                   min="1" 
-                  max="10"
+                  max="30"
                 >
               </div>
               <div class="form-group">
@@ -203,14 +203,14 @@ const saveQuiz = async () => {
                   v-model.number="question.negativeMarking" 
                   class="form-control"
                   min="0" 
-                  max="1" 
-                  step="0.25"
+                  max="30" 
+                  step="0.05"
                 >
               </div>
             </div>
 
             <!-- Multiple Choice Options -->
-            <div v-if="question.type === 'multiple-choice'" class="options-section">
+            <div v-if="question.type === 'multiple-choice'" class="options-section" role="complementary" aria-label="Options picker">
               <div class="options-header">
                 <h4>Answer Options</h4>
                 <button @click="addOption(questionIndex)" type="button" class="add-option-btn">
@@ -265,7 +265,7 @@ const saveQuiz = async () => {
             </div>
 
             <!-- True/False Options -->
-            <div v-else-if="question.type === 'true-false'" class="form-group">
+            <div v-else-if="question.type === 'true-false'" class="form-group" role="complementary" aria-label="true/false answer placement">
               <label>Correct Answer</label>
               <select v-model="question.correctAnswer" class="form-control">
                 <option value="true">True</option>
@@ -274,7 +274,7 @@ const saveQuiz = async () => {
             </div>
 
             <!-- Short Answer / Essay Sample Answer -->
-            <div v-else-if="question.type === 'short-answer' || question.type === 'essay'" class="form-group">
+            <div v-else-if="question.type === 'short-answer' || question.type === 'essay'" class="form-group" role="complementary" aria-label="Answer box">
               <label>Sample Answer / Keywords (for manual grading)</label>
               <div class="language-inputs">
                 <div class="language-input">
@@ -306,7 +306,7 @@ const saveQuiz = async () => {
           Add Another Question
         </button>
         <button @click="saveQuiz" type="button" class="btn primary">
-          Save Quiz
+          Save Test
         </button>
       </div>
     </div>

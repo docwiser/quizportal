@@ -14,28 +14,28 @@ const quizSchema = ref([
   {
     name: 'name',
     type: 'text',
-    label: 'Quiz Name',
+    label: 'Test Name',
     required: true,
-    help: 'Enter a descriptive name for the quiz'
+    help: 'Enter a descriptive name for the Test'
   },
   {
     name: 'description',
     type: 'textarea',
-    label: 'Quiz Description',
+    label: 'Test Description',
     required: true,
-    help: 'Provide details about the quiz content and objectives'
+    help: 'Provide details about the test content and objectives'
   },
   {
     name: 'category',
     type: 'select',
-    label: 'Quiz Category',
+    label: 'Test Category',
     required: true,
     options: [
       { value: 'mock-test', label: 'Mock Test' },
       { value: 'revision-test', label: 'Revision Test' },
       { value: 'practice-test', label: 'Practice Test' }
     ],
-    help: 'Select the type of quiz'
+    help: 'Select the type of test'
   },
   {
     name: 'batchId',
@@ -43,7 +43,7 @@ const quizSchema = ref([
     label: 'Target Batch',
     required: true,
     options: [],
-    help: 'Select which batch this quiz is for'
+    help: 'Select which batch this test is for'
   },
   {
     name: 'timeLimit',
@@ -53,19 +53,29 @@ const quizSchema = ref([
     min: 1,
     max: 180,
     value: 30,
-    help: 'Quiz will auto-submit after this time'
+    help: 'Test will auto-submit after this time'
   },
   {
     name: 'hasNegativeMarking',
-    type: 'checkbox',
+    type: 'radio',
     label: 'Enable Negative Marking',
-    value: [true],
-    help: 'Check to enable negative marking for wrong answers'
+    value: "true",
+    options: [
+      {
+        label: "Yes",
+        value: "true"
+      },
+      {
+        label: "No",
+        value: "false"
+      }
+    ],
+    help: 'choose yes  to enable negative marking for wrong answers. this will be overritten if you change negative marking input on the questions panel'
   },
   {
     name: 'submit',
     type: 'submit',
-    value: 'Create Quiz & Add Questions'
+    value: 'Create Test & Navigate to the questions panel to Add Questions'
   }
 ]);
 
@@ -109,8 +119,8 @@ const handleSubmit = async (formData) => {
 
     const docRef = await addDoc(collection(client.firestore, 'quizzes'), quizData);
     
-    toaster.addToast('Quiz created successfully! Now add questions.', 'success');
-    router.push(`/admin/quiz/${docRef.id}/questions`);
+    toaster.addToast('Test created successfully! Now add questions.', 'success');
+    router.push(`/admin/test/${docRef.id}/questions`);
   } catch (error) {
     console.error('Error creating quiz:', error);
     toaster.addToast('Failed to create quiz. Please try again.', 'error');
@@ -120,10 +130,10 @@ const handleSubmit = async (formData) => {
 
 <template>
   <div class="quiz-create">
-    <Head title="Create Quiz" />
+    <Head title="Create Test" />
     
-    <h1>Create New Quiz</h1>
-    <p>Set up a new quiz for students. After creating the quiz, you'll be able to add questions.</p>
+    <h1>Create New Test</h1>
+    <p>Set up a new test for students. After creating the test, you'll be able to add questions.</p>
 
     <div v-if="loading" class="loading">
       <p>Loading batches...</p>
@@ -141,14 +151,14 @@ const handleSubmit = async (formData) => {
       <details name="quiz-help">
         <summary>Need Help?</summary>
         <div class="help-content">
-          <h3>Creating a Quiz</h3>
+          <h3>Creating a Test</h3>
           <ul>
-            <li><strong>Quiz Name:</strong> Choose a clear, descriptive name that students will recognize</li>
-            <li><strong>Description:</strong> Explain what topics the quiz covers and any special instructions</li>
-            <li><strong>Target Batch:</strong> Select which batch of students can take this quiz</li>
-            <li><strong>Time Limit:</strong> Set how long students have to complete the quiz (1-180 minutes)</li>
+            <li><strong>Test Name:</strong> Choose a clear, descriptive name that students will recognize</li>
+            <li><strong>Description:</strong> Explain what topics the test covers and any special instructions</li>
+            <li><strong>Target Batch:</strong> Select which batch of students can take this test</li>
+            <li><strong>Time Limit:</strong> Set how long students have to complete the test (1-180 minutes)</li>
           </ul>
-          <p>After creating the quiz, you'll be redirected to add questions. You can add multiple choice, short answer, and other question types.</p>
+          <p>After creating the test, you'll be redirected to add questions. You can add multiple choice, short answer, and other question types.</p>
         </div>
       </details>
     </div>

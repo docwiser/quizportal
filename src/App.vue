@@ -26,14 +26,14 @@ console.error(error);
 </script>
 <template>
 <header>
-<RouterLink to="/">Quiz contests</RouterLink>
+<a role="button" href="https://app.saintjosephsacademyfoundation.org/notifications">Notifications</a>
 <details name="mainnavigation">
-<summary role="button">toggle navigation</summary>
+<summary role="button">Menu</summary>
 <nav aria-label="Primary navigation container">
 <ul style="list-style-type:none;">
-<li><RouterLink to="/">Current quiz contests</RouterLink></li>
+<li><RouterLink to="/">Current test Openings</RouterLink></li>
 <li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/dashboard">Admin Dashboard</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/quiz/create">Create Quiz</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/test/create">Create test</RouterLink></li>
 <li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/submissions">View Submissions</RouterLink></li>
 <!--
 <li><RouterLink to="/stats">Global statistics board</RouterLink></li>

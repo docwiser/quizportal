@@ -5,7 +5,7 @@ const props = defineProps({title: {type: String, required: false, default: "Sain
 onMounted(() => {
 config.value.title = document.title;
 config.value.meta = parseMeta();
-document.title = `${props.title} | Saint Josephs Academy cloud console`;
+document.title = `${props.title} | Saint Josephs Academy Test portal`;
 updateMeta(props.meta);
 });
 const parseMeta = () => {

@@ -1,17 +1,17 @@
 <template>
 <div class="home">
-  <Head title="Quiz Contests" />
+  <Head title="Test portal" />
   
   <div class="hero-section">
     <h1>Saint Joseph's Academy</h1>
-    <h2>Quiz Contest Platform</h2>
+    <h2>Test portal</h2>
     <p>Test your knowledge and compete with your classmates</p>
   </div>
 
   <div v-if="!client.session" class="auth-prompt">
     <div class="auth-card">
       <h3>Get Started</h3>
-      <p>Sign in to access quiz contests and track your progress</p>
+      <p>Sign in to access batch-wise testsand track your progress</p>
       <RouterLink to="/login" class="auth-btn">Sign In</RouterLink>
     </div>
   </div>
@@ -19,7 +19,7 @@
   <div v-else class="dashboard-redirect">
     <div class="redirect-card">
       <h3>Welcome back, {{ client.session.displayName }}!</h3>
-      <p>Ready to take on some quiz challenges?</p>
+      <p>Ready to take on some test challenges?</p>
       
       <div class="action-buttons">
         <RouterLink 
@@ -34,7 +34,7 @@
           to="/student/dashboard" 
           class="action-btn student"
         >
-          View Quiz Contests
+          View Available tests
         </RouterLink>
       </div>
     </div>
@@ -45,13 +45,13 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">📝</div>
-        <h4>Interactive Quizzes</h4>
+        <h4>Interactive Tests</h4>
         <p>Multiple choice, short answer, and essay questions</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">⏱️</div>
         <h4>Timed Contests</h4>
-        <p>Challenge yourself with time-limited quiz sessions</p>
+        <p>Challenge yourself with time-limited test sessions</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📊</div>
@@ -72,8 +72,8 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">🎯</div>
-        <h4>Quiz Management</h4>
-        <p>Create, edit, and manage quiz contests for different batches</p>
+        <h4>Test Management</h4>
+        <p>Create, edit, and manage tests for different batches</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📊</div>
@@ -100,7 +100,7 @@
       <div class="feature-card">
         <div class="feature-icon">🌐</div>
         <h4>Bilingual Support</h4>
-        <p>Take quizzes in English or Hindi as per your preference</p>
+        <p>Take tests in English or Hindi as per your preference</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📱</div>

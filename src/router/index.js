@@ -12,13 +12,13 @@ component: () => import('../views/Admin/Dashboard.vue'),
 meta: { requiresAdmin: true }
 },
 {
-path: '/admin/quiz/create',
+path: '/admin/test/create',
 name: 'QuizCreate',
 component: () => import('../views/Admin/QuizCreate.vue'),
 meta: { requiresAdmin: true }
 },
 {
-path: '/admin/quiz/:id/questions',
+path: '/admin/test/:id/questions',
 name: 'QuestionAdd',
 component: () => import('../views/Admin/QuestionAdd.vue'),
 meta: { requiresAdmin: true }
@@ -36,7 +36,7 @@ component: () => import('../views/Student/Dashboard.vue'),
 meta: { requiresAuth: true }
 },
 {
-path: '/quiz/:id/take',
+path: '/test/:id/take',
 name: 'QuizTake',
 component: () => import('../views/Student/QuizTake.vue'),
 meta: { requiresAuth: true }

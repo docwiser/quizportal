@@ -68,7 +68,7 @@ const filteredSubmissions = computed(() => {
 
 const getQuizName = (quizId) => {
   const quiz = quizzes.value.find(q => q.id === quizId);
-  return quiz ? quiz.name : 'Unknown Quiz';
+  return quiz ? quiz.name : 'Unknown Test';
 };
 
 const getBatchName = (batchId) => {
@@ -117,10 +117,10 @@ const isCorrectAnswer = (question, answer) => {
 
 <template>
   <div class="submissions">
-    <Head title="Quiz Submissions" />
+    <Head title="Test Submissions" />
     
-    <h1>Quiz Submissions</h1>
-    <p>View and analyze student quiz submissions</p>
+    <h1>Test Submissions</h1>
+    <p>View and analyze student test submissions</p>
 
     <div v-if="loading" class="loading">
       <p>Loading submissions...</p>
@@ -139,9 +139,9 @@ const isCorrectAnswer = (question, answer) => {
         </div>
 
         <div class="filter-group">
-          <label for="quiz-filter">Filter by Quiz:</label>
+          <label for="quiz-filter">Filter by Test:</label>
           <select id="quiz-filter" v-model="selectedQuiz">
-            <option value="">All Quizzes</option>
+            <option value="">All Tests</option>
             <option v-for="quiz in quizzes" :key="quiz.id" :value="quiz.id">
               {{ quiz.name }}
             </option>
@@ -173,7 +173,7 @@ const isCorrectAnswer = (question, answer) => {
             <div class="submission-info">
               <h3>Submission Details</h3>
               <p><strong>Student:</strong> {{ getUserName(submission.userId) }}</p>
-              <p><strong>Quiz:</strong> {{ getQuizName(submission.quizId) }}</p>
+              <p><strong>Test:</strong> {{ getQuizName(submission.quizId) }}</p>
               <p><strong>Batch:</strong> {{ getBatchName(submission.batchId) }}</p>
               <p><strong>Score:</strong> {{ submission.score || 0 }} points</p>
               <p><strong>Submitted:</strong> {{ formatTimestamp(submission.timestamp) }}</p>
@@ -181,8 +181,8 @@ const isCorrectAnswer = (question, answer) => {
 
             <div class="answers-section">
               <h3>Answers</h3>
-              <div v-if="submission.answers && submission.answers.length > 0" class="answers-list">
-                <div v-for="(answer, index) in submission.answers" :key="index" class="answer-item">
+              <div v-if="submission.answers && submission.answers.length > 0" class="answers-list" role="region" aria-label="Answers list">
+                <div v-for="(answer, index) in submission.answers" :key="index" class="answer-item" role="group" :aria-label="'Answer ' + (index+1) + ' of ' + submission.answers.length">
                   <div class="question-info">
                     <h4>Question {{ index + 1 }}</h4>
                     <p class="question-text">

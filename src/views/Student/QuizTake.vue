@@ -32,7 +32,7 @@ onMounted(async () => {
       // Check if user has access to this quiz
       const hasAccess = await checkQuizAccess();
       if (!hasAccess) {
-        toaster.addToast('You do not have access to this quiz', 'error');
+        toaster.addToast('You do not have access to this test', 'error');
         router.push('/student/dashboard');
         return;
       }
@@ -74,6 +74,7 @@ const checkQuizAccess = async () => {
 const startQuiz = () => {
   showLanguageSelection.value = false;
   quizStarted.value = true;
+  toaster.addToast("Test started. it'll be automaticly submitted when the timer ends", "success");
   startTimer();
 };
 
@@ -112,17 +113,20 @@ const getOptionText = (option) => {
 const nextQuestion = () => {
   if (currentQuestionIndex.value < (quiz.value?.questions?.length || 0) - 1) {
     currentQuestionIndex.value++;
+    toaster.addToast(`Question: ${getQuestionText(currentQuestion.value)}`, 'success');
   }
 };
 
 const previousQuestion = () => {
   if (currentQuestionIndex.value > 0) {
     currentQuestionIndex.value--;
+    toaster.addToast(`Question: ${getQuestionText(currentQuestion.value)}`, 'success');
   }
 };
 
 const goToQuestion = (index) => {
   currentQuestionIndex.value = index;
+    toaster.addToast(`Question: ${getQuestionText(currentQuestion.value)}`, 'success');
 };
 
 const updateAnswer = (value) => {
@@ -209,7 +213,7 @@ const submitQuiz = async () => {
     clearInterval(timerInterval.value);
     quizCompleted.value = true;
     
-    toaster.addToast('Quiz submitted successfully!', 'success');
+    toaster.addToast('Test submitted successfully!', 'success');
   } catch (error) {
     console.error('Error submitting quiz:', error);
     toaster.addToast('Failed to submit quiz', 'error');
@@ -232,13 +236,13 @@ const generateResultPDF = () => {
   // Title
   doc.setFontSize(20);
   doc.setFont(undefined, 'bold');
-  doc.text('Quiz Result Report', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('Test Result Report', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 20;
   
   // Quiz Info
   doc.setFontSize(12);
   doc.setFont(undefined, 'normal');
-  doc.text(`Quiz: ${quiz.value.name}`, margin, yPosition);
+  doc.text(`Test: ${quiz.value.name}`, margin, yPosition);
   yPosition += 10;
   doc.text(`Student: ${client.session.displayName}`, margin, yPosition);
   yPosition += 10;
@@ -353,10 +357,10 @@ onUnmounted(() => {
 
 <template>
   <div class="quiz-take">
-    <Head title="Take Quiz" />
+    <Head title="Take Test" />
     
     <div v-if="loading" class="loading">
-      <p>Loading quiz...</p>
+      <p>Loading test...</p>
     </div>
 
     <!-- Language Selection -->
@@ -384,6 +388,7 @@ onUnmounted(() => {
               @click="selectedLanguage = 'english'"
               :class="{ active: selectedLanguage === 'english' }"
               class="language-btn"
+              :aria-current="selectedLanguage === 'english'"
             >
               English
             </button>
@@ -391,8 +396,9 @@ onUnmounted(() => {
               @click="selectedLanguage = 'hindi'"
               :class="{ active: selectedLanguage === 'hindi' }"
               class="language-btn"
+              :aria-current="selectedLanguage === 'hindi'"
             >
-              हिंदी
+              Hindi (हिंदी)
             </button>
           </div>
         </div>
@@ -403,13 +409,13 @@ onUnmounted(() => {
             <ul>
               <li>Read each question carefully</li>
               <li>You can navigate between questions using Previous/Next buttons</li>
-              <li>The quiz will auto-submit when time runs out</li>
+              <li>The test will auto-submit when time runs out</li>
               <li>Make sure you have a stable internet connection</li>
             </ul>
           </div>
           
           <button @click="startQuiz" class="start-btn">
-            Start Quiz
+            Start Test
           </button>
         </div>
       </div>
@@ -418,7 +424,7 @@ onUnmounted(() => {
     <!-- Quiz Completed -->
     <div v-else-if="quizCompleted" class="quiz-completed">
       <div class="result-card">
-        <h1>Quiz Completed!</h1>
+        <h1>Test Completed!</h1>
         <div class="result-summary">
           <h3>Your Results</h3>
           <div class="result-stats">
@@ -456,7 +462,7 @@ onUnmounted(() => {
     <div v-else-if="quizStarted" class="quiz-interface">
       <!-- Timer -->
       <div class="timer-section">
-        <div class="timer" :class="{ warning: timeRemaining < 300, critical: timeRemaining < 60 }">
+        <div class="timer" :class="{ warning: timeRemaining < 300, critical: timeRemaining < 60 }" aria-atomic="true">
           <span class="timer-icon">⏱️</span>
           <span class="timer-text">{{ formatTime(timeRemaining) }}</span>
         </div>
@@ -552,11 +558,13 @@ onUnmounted(() => {
 
       <!-- Navigation -->
       <div class="navigation-section">
-        <div class="nav-buttons">
+        <div class="nav-buttons" role="nav" aria-label="change question">
           <button 
             @click="previousQuestion"
             :disabled="currentQuestionIndex === 0"
             class="nav-btn prev-btn"
+            title="Go to the previous question"
+            accesskey="p"
           >
             ← Previous
           </button>
@@ -565,6 +573,8 @@ onUnmounted(() => {
             @click="nextQuestion"
             :disabled="currentQuestionIndex === (quiz.questions?.length || 0) - 1"
             class="nav-btn next-btn"
+            title="go to the next question"
+            accesskey="n"
           >
             Next →
           </button>
@@ -574,7 +584,7 @@ onUnmounted(() => {
       <!-- Summary -->
       <div class="summary-section">
         <div class="summary-card">
-          <h3>Quiz Summary</h3>
+          <h3>Test Summary</h3>
           <div class="summary-stats">
             <div class="summary-item">
               <span class="summary-label">Attempted:</span>
@@ -586,7 +596,7 @@ onUnmounted(() => {
             </div>
           </div>
           
-          <div class="question-grid">
+          <div class="question-grid" role="nav" aria-label="Questions list">
             <button
               v-for="(question, index) in quiz.questions"
               :key="index"
@@ -597,8 +607,10 @@ onUnmounted(() => {
                 'unattempted': answers[index] === null || answers[index] === ''
               }"
               class="question-nav-btn"
+              :aria-current="index === currentQuestionIndex"
+              :disabled="index === currentQuestionIndex"
             >
-              {{ index + 1 }}
+              Go to Question {{ index + 1 }}
             </button>
           </div>
           
@@ -608,7 +620,7 @@ onUnmounted(() => {
               :disabled="submitting"
               class="submit-btn"
             >
-              {{ submitting ? 'Submitting...' : 'Submit Quiz' }}
+              {{ submitting ? 'Submitting...' : 'Submit Test' }}
             </button>
           </div>
         </div>

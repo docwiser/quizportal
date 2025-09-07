@@ -65,23 +65,23 @@ const filteredQuizzes = computed(() => {
 
 <template>
   <div class="student-dashboard">
-    <Head title="Quiz Contests" />
+    <Head title="Tests" />
     
-    <h1>Available Quiz Contests</h1>
-    <p v-if="client.session">Welcome, {{ client.session.displayName }}! Here are the quiz contests available for your batch.</p>
+    <h1>Available Tests</h1>
+    <p v-if="client.session">Welcome, {{ client.session.displayName }}! Here are the Tests available for your batch.</p>
 
     <div v-if="loading" class="loading">
-      <p>Loading quiz contests...</p>
+      <p>Loading Tests...</p>
     </div>
 
     <div v-else-if="quizzes.length === 0" class="no-quizzes">
-      <h2>No Quiz Contests Available</h2>
-      <p>There are currently no active quiz contests for your batch. Check back later!</p>
+      <h2>No Tests Available</h2>
+      <p>There are currently no active tests for your batch. Check back later!</p>
     </div>
 
     <div v-else class="quizzes-container">
       <div class="quiz-categories">
-        <h3>Quiz Categories</h3>
+        <h3>Test Categories</h3>
         <div class="category-tabs">
           <button 
             v-for="category in ['all', 'mock-test', 'revision-test', 'practice-test']" 
@@ -89,8 +89,10 @@ const filteredQuizzes = computed(() => {
             @click="selectedCategory = category"
             :class="{ active: selectedCategory === category }"
             class="category-tab"
+            role="tab"
+            :aria-selected="selectedCategory === category"
           >
-            {{ category === 'all' ? 'All Quizzes' : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) }}
+            {{ category === 'all' ? 'All Tests' : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) }}
           </button>
         </div>
       </div>
@@ -138,20 +140,20 @@ const filteredQuizzes = computed(() => {
               <h4>Instructions</h4>
               <ul>
                 <li>Read each question carefully before answering</li>
-                <li>You have {{ formatTimeLimit(quiz.timeLimit) }} to complete the quiz</li>
-                <li>The quiz will auto-submit when time runs out</li>
+                <li>You have {{ formatTimeLimit(quiz.timeLimit) }} to complete the test</li>
+                <li>The test will auto-submit when time runs out</li>
                 <li>Make sure you have a stable internet connection</li>
-                <li>You can only take this quiz once</li>
+                <li>You can only take this test once</li>
               </ul>
             </div>
 
             <div class="quiz-actions">
               <RouterLink 
-                :to="`/quiz/${quiz.id}/take`" 
+                :to="`/test/${quiz.id}/take`" 
                 class="start-quiz-btn"
                 role="button"
               >
-                Start Quiz
+                Start Test
               </RouterLink>
             </div>
           </div>

@@ -65,7 +65,7 @@ const deleteQuiz = async (quizId) => {
     <Head title="Admin Dashboard" />
     
     <h1>Admin Dashboard</h1>
-    <p>Welcome to the Saint Joseph's Academy Quiz Administration Panel</p>
+    <p>Welcome to the Saint Joseph's Academy Test Administration Panel</p>
 
     <div v-if="loading" class="loading">
       <p>Loading dashboard...</p>
@@ -75,8 +75,8 @@ const deleteQuiz = async (quizId) => {
       <section class="quick-actions">
         <h2>Quick Actions</h2>
         <div class="action-buttons">
-          <RouterLink to="/admin/quiz/create" class="action-btn primary">
-            Create New Quiz
+          <RouterLink to="/admin/test/create" class="action-btn primary">
+            Create New Test
           </RouterLink>
           <RouterLink to="/admin/submissions" class="action-btn secondary">
             View Submissions
@@ -88,7 +88,7 @@ const deleteQuiz = async (quizId) => {
         <h2>Overview</h2>
         <div class="stats-grid">
           <div class="stat-card">
-            <h3>Total Quizzes</h3>
+            <h3>Total Tests</h3>
             <p class="stat-number">{{ quizzes.length }}</p>
           </div>
           <div class="stat-card">
@@ -99,7 +99,7 @@ const deleteQuiz = async (quizId) => {
       </section>
 
       <section class="recent-quizzes">
-        <h2>Recent Quizzes</h2>
+        <h2>Recent Tests</h2>
         <div class="quiz-categories">
           <div class="category-tabs">
             <button 
@@ -108,13 +108,15 @@ const deleteQuiz = async (quizId) => {
               @click="selectedCategory = category"
               :class="{ active: selectedCategory === category }"
               class="category-tab"
+              role="tab"
+              :aria-selected="selectedCategory === category"
             >
               {{ category === 'all' ? 'All' : category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()) }}
             </button>
           </div>
         </div>
         <div v-if="quizzes.length === 0" class="empty-state">
-          <p>No quizzes created yet. <RouterLink to="/admin/quiz/create">Create your first quiz</RouterLink></p>
+          <p>No tests created yet. <RouterLink to="/admin/test/create">Create your first test</RouterLink></p>
         </div>
         <div v-else class="quiz-list">
           <details v-for="quiz in filteredQuizzes.slice(0, 5)" :key="quiz.id" name="recent-quizzes">
@@ -129,11 +131,11 @@ const deleteQuiz = async (quizId) => {
               <p><strong>Questions:</strong> {{ quiz.questions?.length || 0 }}</p>
              <p><strong>Negative Marking:</strong> {{ quiz.hasNegativeMarking ? 'Yes' : 'No' }}</p>
               <div class="quiz-actions">
-                <RouterLink :to="`/admin/quiz/${quiz.id}/questions`" class="btn-link">
+                <RouterLink :to="`/admin/test/${quiz.id}/questions`" class="btn-link">
                   Edit Questions
                 </RouterLink>
                 <button @click="deleteQuiz(quiz.id)" class="btn-delete">
-                  Delete Quiz
+                  Delete Test
                 </button>
               </div>
             </div>

@@ -29,15 +29,15 @@ toaster.addToast(error.message, "error");
 <div class="login-container">
 <div v-if="client.session">
 <h1>Saint Joseph's academy</h1>
-<h2>quiz contest and moniterring system</h2>
+<h2>Test Management and moniterring system</h2>
 <p>currently signed in as {{client.session.displayName}} ({{client.session.email}})</p>
 <RouterLink to="/">Go to dashboard</RouterLink>
 </div>
 <div class="login-card" v-else>
 <h1>Welcome to Saint Joseph's Academy</h1>
-<p>Quiz Contest Platform</p>
+<p>Tests Management and monitering Platform</p>
 <div class="login-content">
-<p>Sign in with your Student account to access quiz contests</p>
+<p>Sign in with your Student account to access Batch-wised Tests</p>
 <form @submit.prevent="signin">
 <label for="email">Email Address (must be one of the verified student email at Saint Joseph's academy):</label>
 <input type="email" id="email" v-model="email" required="" placeholder="E.G. john@student.org" />
