@@ -25,6 +25,20 @@ const submissionResult = ref(null);
 
 onMounted(async () => {
   try {
+    // First check if user has already taken this quiz
+    const existingSubmissionQuery = query(
+      collection(client.firestore, 'quiz-submissions'),
+      where('userId', '==', client.session.uid),
+      where('quizId', '==', route.params.id)
+    );
+    const existingSubmissionSnapshot = await getDocs(existingSubmissionQuery);
+    
+    if (!existingSubmissionSnapshot.empty) {
+      toaster.addToast('You have already taken this test', 'error');
+      router.push('/student/dashboard');
+      return;
+    }
+
     const quizDoc = await getDoc(doc(client.firestore, 'quizzes', route.params.id));
     if (quizDoc.exists()) {
       quiz.value = { id: quizDoc.id, ...quizDoc.data() };
@@ -182,7 +196,7 @@ const submitQuiz = async () => {
   if (submitting.value) return;
   
   submitting.value = true;
-  
+  toaster.addToast("Processing, please wait...", "success");
   try {
     const result = calculateScore();
     

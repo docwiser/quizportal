@@ -6,6 +6,7 @@ import { useToast } from '@composables/toast';
 
 const toaster = useToast();
 const quizzes = ref([]);
+const submissions = ref([]);
 const loading = ref(true);
 const selectedCategory = ref('all');
 
@@ -38,6 +39,17 @@ onMounted(async () => {
       ...doc.data()
     }));
 
+    // Fetch user's submissions to check which quizzes they've already taken
+    const submissionsQuery = query(
+      collection(client.firestore, 'quiz-submissions'),
+      where('userId', '==', client.session.uid)
+    );
+    const submissionsSnapshot = await getDocs(submissionsQuery);
+    submissions.value = submissionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
     loading.value = false;
   } catch (error) {
     console.error('Error fetching quizzes:', error);
@@ -46,6 +58,14 @@ onMounted(async () => {
   }
 });
 
+const hasUserTakenQuiz = (quizId) => {
+  return submissions.value.some(submission => submission.quizId === quizId);
+};
+
+const getUserSubmission = (quizId) => {
+  return submissions.value.find(submission => submission.quizId === quizId);
+};
+
 const formatTimeLimit = (minutes) => {
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
@@ -53,6 +73,12 @@ const formatTimeLimit = (minutes) => {
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   }
   return `${minutes}m`;
+};
+
+const formatTimestamp = (timestamp) => {
+  if (!timestamp) return 'Unknown';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
 };
 
 const filteredQuizzes = computed(() => {
@@ -101,12 +127,12 @@ const filteredQuizzes = computed(() => {
         <details v-for="quiz in filteredQuizzes" :key="quiz.id" name="available-quizzes" class="quiz-card">
           <summary>
             <div class="quiz-header">
-              <h3>{{ quiz.name }}</h3>
-             <div class="quiz-category">{{ quiz.category?.replace('-', ' ') || 'General' }}</div>
+              <h3>{{ quiz.name }},</h3>
+             <div class="quiz-category">{{ quiz.category?.replace('-', ' ') || 'General' }},</div>
               <div class="quiz-meta">
-                <span class="time-limit">⏱️ {{ formatTimeLimit(quiz.timeLimit) }}</span>
-                <span class="question-count">📝 {{ quiz.questions?.length || 0 }} questions</span>
-               <span class="negative-marking">{{ quiz.hasNegativeMarking ? '⚠️ Negative Marking' : '✓ No Negative Marking' }}</span>
+                <span class="time-limit">{{ formatTimeLimit(quiz.timeLimit) }},</span>
+                <span class="question-count">{{ quiz.questions?.length || 0 }} questions,</span>
+               <span class="negative-marking">{{ quiz.hasNegativeMarking ? 'Negative Marking' : ' No Negative Marking' }}</span>
               </div>
             </div>
           </summary>
@@ -365,6 +391,60 @@ const filteredQuizzes = computed(() => {
   outline-offset: 2px;
 }
 
+.quiz-completed {
+  text-align: center;
+}
+
+.completed-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+  color: #155724;
+}
+
+.completed-icon {
+  font-size: 2rem;
+  color: #28a745;
+  flex-shrink: 0;
+}
+
+.completed-text {
+  text-align: left;
+}
+
+.completed-text strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.completed-text p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #0f5132;
+}
+
+.start-quiz-btn.disabled {
+  background: #6c757d;
+  color: #fff;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+}
+
+.start-quiz-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: #6c757d;
+}
+
 @media (max-width: 768px) {
   .quiz-meta {
     flex-direction: column;
@@ -373,6 +453,15 @@ const filteredQuizzes = computed(() => {
   
   .quiz-info {
     grid-template-columns: 1fr;
+  }
+  
+  .completed-message {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .completed-text {
+    text-align: center;
   }
 }
 </style>
