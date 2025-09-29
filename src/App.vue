@@ -1,7 +1,7 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {RouterLink, RouterView} from "vue-router";
-import {client} from "@composables/client";
+0import {client} from "@composables/client";
 import {getRedirectResult, GoogleAuthProvider, signInWithCredential, signOut} from "firebase/auth";
 onMounted(async() => {
 try {
@@ -31,10 +31,10 @@ console.error(error);
 <summary role="button">Menu</summary>
 <nav aria-label="Primary navigation container">
 <ul style="list-style-type:none;">
-<li><RouterLink to="/">Current test Openings</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/dashboard">Admin Dashboard</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/test/create">Create test</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink to="/admin/submissions">View Submissions</RouterLink></li>
+<li><RouterLink role="button" to="/">Current test Openings</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/dashboard">Admin Dashboard</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/test/create">Create test</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/submissions">View Submissions</RouterLink></li>
 <!--
 <li><RouterLink to="/stats">Global statistics board</RouterLink></li>
 <li><RouterLink to="/batchstats">Batch-wise stats report</RouterLink></li>
@@ -50,7 +50,7 @@ console.error(error);
 <button @click="signout">Sign out</button>
 </div>
 <div v-else>
-<RouterLink to="/login">Sign in</RouterLink>
+<RouterLink role="button" to="/login">Sign in</RouterLink>
 </div>
 </header>
 <RouterView />

@@ -31,7 +31,7 @@ toaster.addToast(error.message, "error");
 <h1>Saint Joseph's academy</h1>
 <h2>Test Management and moniterring system</h2>
 <p>currently signed in as {{client.session.displayName}} ({{client.session.email}})</p>
-<RouterLink to="/">Go to dashboard</RouterLink>
+<RouterLink role="button" to="/">Go to dashboard</RouterLink>
 </div>
 <div class="login-card" v-else>
 <h1>Welcome to Saint Joseph's Academy</h1>

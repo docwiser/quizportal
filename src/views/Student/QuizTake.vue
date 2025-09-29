@@ -465,7 +465,7 @@ onUnmounted(() => {
           <button @click="generateResultPDF" class="pdf-btn">
             Download Result PDF
           </button>
-          <RouterLink to="/student/dashboard" class="back-btn">
+          <RouterLink role="button" to="/student/dashboard" class="back-btn">
             Back to Dashboard
           </RouterLink>
         </div>

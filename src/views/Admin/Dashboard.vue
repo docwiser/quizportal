@@ -1,4 +1,4 @@
-<script setup>
+0<script setup>
 import { ref, computed, onMounted } from 'vue';
 import { collection, getDocs, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { client } from '@composables/client';
@@ -75,10 +75,10 @@ const deleteQuiz = async (quizId) => {
       <section class="quick-actions">
         <h2>Quick Actions</h2>
         <div class="action-buttons">
-          <RouterLink to="/admin/test/create" class="action-btn primary">
+          <RouterLink role="button" to="/admin/test/create" class="action-btn primary">
             Create New Test
           </RouterLink>
-          <RouterLink to="/admin/submissions" class="action-btn secondary">
+          <RouterLink role="button" to="/admin/submissions" class="action-btn secondary">
             View Submissions
           </RouterLink>
         </div>
@@ -116,7 +116,7 @@ const deleteQuiz = async (quizId) => {
           </div>
         </div>
         <div v-if="quizzes.length === 0" class="empty-state">
-          <p>No tests created yet. <RouterLink to="/admin/test/create">Create your first test</RouterLink></p>
+          <p>No tests created yet. <RouterLink role="button" to="/admin/test/create">Create your first test</RouterLink></p>
         </div>
         <div v-else class="quiz-list">
           <details v-for="quiz in filteredQuizzes.slice(0, 5)" :key="quiz.id" name="recent-quizzes">
@@ -131,7 +131,7 @@ const deleteQuiz = async (quizId) => {
               <p><strong>Questions:</strong> {{ quiz.questions?.length || 0 }}</p>
              <p><strong>Negative Marking:</strong> {{ quiz.hasNegativeMarking ? 'Yes' : 'No' }}</p>
               <div class="quiz-actions">
-                <RouterLink :to="`/admin/test/${quiz.id}/questions`" class="btn-link">
+                <RouterLink role="button" :to="`/admin/test/${quiz.id}/questions`" class="btn-link">
                   Edit Questions
                 </RouterLink>
                 <button @click="deleteQuiz(quiz.id)" class="btn-delete">

@@ -12,7 +12,7 @@
     <div class="auth-card">
       <h3>Get Started</h3>
       <p>Sign in to access batch-wise testsand track your progress</p>
-      <RouterLink to="/login" class="auth-btn">Sign In</RouterLink>
+      <RouterLink role="button" to="/login" class="auth-btn">Sign In</RouterLink>
     </div>
   </div>
 
@@ -24,6 +24,7 @@
       <div class="action-buttons">
         <RouterLink 
           v-if="client.session.role_num > 5" 
+          role="button"
           to="/admin/dashboard" 
           class="action-btn admin"
         >
@@ -31,6 +32,7 @@
         </RouterLink>
         <RouterLink 
           v-else 
+          role="button"
           to="/student/dashboard" 
           class="action-btn student"
         >
