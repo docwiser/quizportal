@@ -1,7 +1,7 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {RouterLink, RouterView} from "vue-router";
-0import {client} from "@composables/client";
+import {client} from "@composables/client";
 import {getRedirectResult, GoogleAuthProvider, signInWithCredential, signOut} from "firebase/auth";
 onMounted(async() => {
 try {
