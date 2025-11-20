@@ -26,25 +26,27 @@ toaster.addToast(error.message, "error");
 };
 </script>
 <template>
+<main>
+<Head title="Sign in" />
 <div class="login-container">
 <div v-if="client.session">
-<h1>Saint Joseph's academy</h1>
-<h2>Test Management and moniterring system</h2>
+<h1>Welcome back</h1>
 <p>currently signed in as {{client.session.displayName}} ({{client.session.email}})</p>
 <RouterLink role="button" to="/">Go to dashboard</RouterLink>
 </div>
 <div class="login-card" v-else>
-<h1>Welcome to Saint Joseph's Academy</h1>
-<p>Tests Management and monitering Platform</p>
+<h1>Sign in</h1>
 <div class="login-content">
-<p>Sign in with your Student account to access Batch-wised Tests</p>
+<p>Sign in with your Student account to access all the courses</p>
 <form @submit.prevent="signin">
-<label for="email">Email Address (must be one of the verified student email at Saint Joseph's academy):</label>
+<label for="email">Email Address:</label>
 <input type="email" id="email" v-model="email" required="" placeholder="E.G. john@student.org" />
 <label for="password">Password:</label>
 <input type="password" id="password" v-model="password" required="" placeholder="Type your account password" />
 <input type="submit" value="Sign in" />
 </form>
+<a class="google-signin-btn" role="button" href="https://saintjosephsacademyfoundation.org/enrollment">Enroll as a new student</a>
+<!--
 <button 
 @click="signInWithGoogle"
 class="google-signin-btn"
@@ -58,10 +60,11 @@ aria-label="Sign in with Google"
 </svg>
 Sign in with Google
 </button>
-<p>to manage your account, please visit <a href="https://saintjosephsacademyfoundation.org">Saint Joseph's academy foundation</a></p>
+!-->
 </div>
 </div>
 </div>
+</main>
 </template>
 <style scoped>
 .login-container {

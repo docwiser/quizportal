@@ -1,299 +1,260 @@
 <template>
+<main>
 <div class="home">
-  <Head title="Test portal" />
-  
-  <div class="hero-section">
-    <h1>Saint Joseph's Academy</h1>
-    <h2>Test portal</h2>
-    <p>Test your knowledge and compete with your classmates</p>
-  </div>
-
-  <div v-if="!client.session" class="auth-prompt">
-    <div class="auth-card">
-      <h3>Get Started</h3>
-      <p>Sign in to access batch-wise testsand track your progress</p>
-      <RouterLink role="button" to="/login" class="auth-btn">Sign In</RouterLink>
-    </div>
-  </div>
-
-  <div v-else class="dashboard-redirect">
-    <div class="redirect-card">
-      <h3>Welcome back, {{ client.session.displayName }}!</h3>
-      <p>Ready to take on some test challenges?</p>
-      
-      <div class="action-buttons">
-        <RouterLink 
-          v-if="client.session.role_num > 5" 
-          role="button"
-          to="/admin/dashboard" 
-          class="action-btn admin"
-        >
-          Admin Dashboard
-        </RouterLink>
-        <RouterLink 
-          v-else 
-          role="button"
-          to="/student/dashboard" 
-          class="action-btn student"
-        >
-          View Available tests
-        </RouterLink>
-      </div>
-    </div>
-  </div>
-
-  <div class="features-section" v-if="!client.session">
-    <h3>Platform Features</h3>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">📝</div>
-        <h4>Interactive Tests</h4>
-        <p>Multiple choice, short answer, and essay questions</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⏱️</div>
-        <h4>Timed Contests</h4>
-        <p>Challenge yourself with time-limited test sessions</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h4>Progress Tracking</h4>
-        <p>Monitor your performance and improvement over time</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🏆</div>
-        <h4>Batch Competition</h4>
-        <p>Compete with classmates in your batch</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Admin Features -->
-  <div v-else-if="client.session.role_num > 5" class="features-section">
-    <h3>Admin Features</h3>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🎯</div>
-        <h4>Test Management</h4>
-        <p>Create, edit, and manage tests for different batches</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h4>Submission Analytics</h4>
-        <p>View detailed student submissions and performance analytics</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">👥</div>
-        <h4>Batch Management</h4>
-        <p>Organize students into batches and assign quiz access</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📈</div>
-        <h4>Progress Reports</h4>
-        <p>Generate comprehensive reports on student performance</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Student Features -->
-  <div v-else class="features-section">
-    <h3>Student Features</h3>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <h4>Bilingual Support</h4>
-        <p>Take tests in English or Hindi as per your preference</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📱</div>
-        <h4>Mobile Friendly</h4>
-        <p>Responsive design works perfectly on all devices</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⏰</div>
-        <h4>Real-time Timer</h4>
-        <p>Live countdown timer with auto-submit functionality</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📄</div>
-        <h4>Result PDF</h4>
-        <p>Download detailed result reports in PDF format</p>
-      </div>
-    </div>
-  </div>
+<Head title="providing free and affordable preparation for a wide range of competitive exams conducted by the Government of India" />
+<div class="hero-section">
+<h1>Saint Joseph's Academy</h1>
+<p>Your gateway to learning, growth, and career opportunities. Explore our study resources, test area, and member-only benefits designed to empower students, women, and Divyang learners.</p>
 </div>
+<div v-if="!client.session" class="auth-prompt">
+<div class="auth-card">
+<h3>Get Started</h3>
+<p>Sign in to access your enrolled courses, apply for a new course, view/attend tests, and much more</p>
+<RouterLink role="button" to="/login" class="auth-btn">Sign In</RouterLink>
+<a role="button" href="https://saintjosephsacademyfoundation.org/enrollment" class="auth-btn">Enroll as a new student</a>
+</div>
+</div>
+<div v-else class="dashboard-redirect">
+<div class="redirect-card">
+<h3>Welcome back, {{ client.session.displayName }}!</h3>
+<p>access your personalized learning space or proove your self by taking some tests</p>
+<div class="action-buttons">
+<RouterLink 
+v-if="client.session.role_num > 5" 
+role="button"
+to="/admin/dashboard" 
+class="action-btn admin"
+>
+Admin Dashboard
+</RouterLink>
+<RouterLink role="button" to="/courses" class="action-btn student">All courses</RouterLink>
+<RouterLink role="button" to="/student/dashboard" class="action-btn student">View Available tests</RouterLink>
+<RouterLink role="button" to="/apply-course" class="action-btn student">Apply for a new course</RouterLink>
+</div>
+</div>
+</div>
+<!--
+<div class="features-section" v-if="!client.session">
+<h3>Platform Features</h3>
+<div class="features-grid">
+<div class="feature-card">
+<div class="feature-icon">📝</div>
+<h4>Interactive Tests</h4>
+<p>Multiple choice, short answer, and essay questions</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">⏱️</div>
+<h4>Timed Contests</h4>
+<p>Challenge yourself with time-limited test sessions</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">📊</div>
+<h4>Progress Tracking</h4>
+<p>Monitor your performance and improvement over time</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">🏆</div>
+<h4>Batch Competition</h4>
+<p>Compete with classmates in your batch</p>
+</div>
+</div>
+</div>
+<div v-else-if="client.session.role_num > 5" class="features-section">
+<h3>Admin Features</h3>
+<div class="features-grid">
+<div class="feature-card">
+<div class="feature-icon">🎯</div>
+<h4>Test Management</h4>
+<p>Create, edit, and manage tests for different batches</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">📊</div>
+<h4>Submission Analytics</h4>
+<p>View detailed student submissions and performance analytics</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">👥</div>
+<h4>Batch Management</h4>
+<p>Organize students into batches and assign quiz access</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">📈</div>
+<h4>Progress Reports</h4>
+<p>Generate comprehensive reports on student performance</p>
+</div>
+</div>
+</div>
+<div v-else class="features-section">
+<h3>Student Features</h3>
+<div class="features-grid">
+<div class="feature-card">
+<div class="feature-icon">🌐</div>
+<h4>Bilingual Support</h4>
+<p>Take tests in English or Hindi as per your preference</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">📱</div>
+<h4>Mobile Friendly</h4>
+<p>Responsive design works perfectly on all devices</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">⏰</div>
+<h4>Real-time Timer</h4>
+<p>Live countdown timer with auto-submit functionality</p>
+</div>
+<div class="feature-card">
+<div class="feature-icon">📄</div>
+<h4>Result PDF</h4>
+<p>Download detailed result reports in PDF format</p>
+</div>
+</div>
+</div>
+!-->
+</div>
+</main>
 </template>
 <script setup>
 import { client } from '@composables/client';
 </script>
-
 <style scoped>
 .home {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+max-width: 1200px;
+margin: 0 auto;
+padding: 2rem;
 }
-
 .hero-section {
-  text-align: center;
-  padding: 3rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 12px;
-  margin-bottom: 3rem;
+text-align: center;
+padding: 3rem 0;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+border-radius: 12px;
+margin-bottom: 3rem;
 }
-
 .hero-section h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+font-size: 2.5rem;
+margin-bottom: 0.5rem;
 }
-
 .hero-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  opacity: 0.9;
+font-size: 1.5rem;
+margin-bottom: 1rem;
+opacity: 0.9;
 }
-
 .hero-section p {
-  font-size: 1.1rem;
-  opacity: 0.8;
+font-size: 1.1rem;
+opacity: 0.8;
 }
-
 .auth-prompt, .dashboard-redirect {
-  display: flex;
-  justify-content: center;
-  margin: 2rem 0;
+display: flex;
+justify-content: center;
+margin: 2rem 0;
 }
-
 .auth-card, .redirect-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
+background: white;
+padding: 2rem;
+border-radius: 12px;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+text-align: center;
+max-width: 400px;
+width: 100%;
 }
-
 .auth-card h3, .redirect-card h3 {
-  margin-bottom: 1rem;
-  color: #333;
+margin-bottom: 1rem;
+color: #333;
 }
-
 .auth-card p, .redirect-card p {
-  color: #666;
-  margin-bottom: 1.5rem;
+color: #666;
+margin-bottom: 1.5rem;
 }
-
 .auth-btn {
-  display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 0.75rem 2rem;
-  border-radius: 25px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
+display: inline-block;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+padding: 0.75rem 2rem;
+border-radius: 25px;
+text-decoration: none;
+font-weight: 500;
+transition: all 0.2s ease;
 }
-
 .auth-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+transform: translateY(-1px);
+box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
 }
-
 .action-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
+display: flex;
+gap: 1rem;
+justify-content: center;
 }
-
 .action-btn {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
+display: inline-block;
+padding: 0.75rem 1.5rem;
+border-radius: 6px;
+text-decoration: none;
+font-weight: 500;
+transition: all 0.2s ease;
 }
-
 .action-btn.admin {
-  background: #dc3545;
-  color: white;
+background: #dc3545;
+color: white;
 }
-
 .action-btn.admin:hover {
-  background: #c82333;
+background: #c82333;
 }
-
 .action-btn.student {
-  background: #28a745;
-  color: white;
+background: #28a745;
+color: white;
 }
-
 .action-btn.student:hover {
-  background: #1e7e34;
+background: #1e7e34;
 }
-
 .features-section {
-  margin: 3rem 0;
+margin: 3rem 0;
 }
-
 .features-section h3 {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #333;
-  font-size: 1.8rem;
+text-align: center;
+margin-bottom: 2rem;
+color: #333;
+font-size: 1.8rem;
 }
-
 .features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+gap: 2rem;
 }
-
 .feature-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  transition: transform 0.2s ease;
+background: white;
+padding: 2rem;
+border-radius: 12px;
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+text-align: center;
+transition: transform 0.2s ease;
 }
-
 .feature-card:hover {
-  transform: translateY(-2px);
+transform: translateY(-2px);
 }
-
 .feature-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+font-size: 2.5rem;
+margin-bottom: 1rem;
 }
-
 .feature-card h4 {
-  margin-bottom: 1rem;
-  color: #333;
+margin-bottom: 1rem;
+color: #333;
 }
-
 .feature-card p {
-  color: #666;
-  line-height: 1.5;
+color: #666;
+line-height: 1.5;
 }
-
 @media (max-width: 768px) {
-  .hero-section h1 {
-    font-size: 2rem;
-  }
-  
-  .hero-section h2 {
-    font-size: 1.3rem;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
+.hero-section h1 {
+font-size: 2rem;
+}
+.hero-section h2 {
+font-size: 1.3rem;
+}
+.action-buttons {
+flex-direction: column;
+}
+.features-grid {
+grid-template-columns: 1fr;
+}
 }
 </style>

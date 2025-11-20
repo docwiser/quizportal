@@ -37,6 +37,10 @@ function closeModal() {
 modalOpen.value = false;
 emit("modalClosed");
 }
+defineExpose({
+openModal,
+closeModal,
+});
 </script>
 <template>
 <div>

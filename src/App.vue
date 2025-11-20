@@ -1,8 +1,20 @@
 <script setup>
-import {ref, onMounted} from "vue";
+import {ref, computed, onMounted} from "vue";
 import {RouterLink, RouterView} from "vue-router";
+import Modal from "./components/modal.vue";
 import {client} from "@composables/client";
 import {getRedirectResult, GoogleAuthProvider, signInWithCredential, signOut} from "firebase/auth";
+const modalRef = ref(null);
+const signInRef = ref(null);
+const buttonLabel = computed(() => {
+if (client.session) {
+const name = client?.session?.displayName || "User";
+const email = client?.session?.email || "No email";
+return `Signed in as ${name} (${email})`;
+} else {
+return "More options";
+}
+});
 onMounted(async() => {
 try {
 const result = await getRedirectResult(client.auth);
@@ -20,34 +32,39 @@ try {
 signOut(client.auth);
 } catch(error) {
 console.error(error);
-
 };
 };
 </script>
 <template>
 <header>
-<a role="button" href="https://app.saintjosephsacademyfoundation.org/notifications">Notifications</a>
-<details name="mainnavigation">
-<summary role="button">Menu</summary>
+<RouterLink role="button" to="/notifications">Notifications</RouterLink>
+<div v-if="client.session">
+<Modal :showButton="true" :buttonLabel="buttonLabel" :title="buttonLabel" ref="modalRef">
+<img v-if="client.session?.photoURL" :src="client.session.photoURL" alt="Profile photo" />
 <nav aria-label="Primary navigation container">
 <ul style="list-style-type:none;">
-<li><RouterLink role="button" to="/">Current test Openings</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/dashboard">Admin Dashboard</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/test/create">Create test</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/submissions">View Submissions</RouterLink></li>
+<li><RouterLink role="button" to="/" @click="modalRef.closeModal()">Home</RouterLink></li>
+<li><RouterLink role="button" to="/courses" @click="modalRef.closeModal()">All Courses</RouterLink></li>
+<li><RouterLink role="button" to="/apply-course" @click="modalRef.closeModal()">Apply for a new course</RouterLink></li>
+<li><RouterLink role="button" to="/student/dashboard" @click="modalRef.closeModal()">View/attend Tests</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/dashboard" @click="modalRef.closeModal()">Admin Dashboard</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/test/create" @click="modalRef.closeModal()">Create test</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/submissions" @click="modalRef.closeModal()">View Submissions</RouterLink></li>
 <!--
 <li><RouterLink to="/stats">Global statistics board</RouterLink></li>
 <li><RouterLink to="/batchstats">Batch-wise stats report</RouterLink></li>
 -->
+<li><RouterLink role="button" to="/edit" @click="modalRef.closeModal()">Edit profile</RouterLink></li>
+<li>
+<Modal :showButton="true" buttonLabel="Sign out" title="Sign out?" ref="signInRef">
+<p>Are you sure you want to sign out of your account?</p>
+<button @click="signInRef.closeModal">Cancel</button>
+<button @click="signout">Sign out</button>
+</Modal>
+</li>
 </ul>
 </nav>
-</details>
-<div v-if="client.session">
-<img v-if="client.session?.photoURL" :src="client.session.photoURL" alt="Profile photo" />
-<p>{{client.session.displayName}} ({{client.session.email}})
-<span v-if="client.session.role_num > 5" class="admin-badge">Admin</span>
-</p>
-<button @click="signout">Sign out</button>
+</Modal>
 </div>
 <div v-else>
 <RouterLink role="button" to="/login">Sign in</RouterLink>
@@ -58,7 +75,6 @@ console.error(error);
 
 </footer>
 <Toaster />
-<RouteAnnouncer />
 </template>
 <style scoped>
 .admin-badge {
