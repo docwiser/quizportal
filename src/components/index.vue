@@ -19,16 +19,8 @@
 <h3>Welcome back, {{ client.session.displayName }}!</h3>
 <p>access your personalized learning space or proove your self by taking some tests</p>
 <div class="action-buttons">
-<RouterLink 
-v-if="client.session.role_num > 5" 
-role="button"
-to="/admin/dashboard" 
-class="action-btn admin"
->
-Admin Dashboard
-</RouterLink>
-<RouterLink role="button" to="/courses" class="action-btn student">All courses</RouterLink>
-<RouterLink role="button" to="/student/dashboard" class="action-btn student">View Available tests</RouterLink>
+<RouterLink role="button" to="/courses" class="action-btn student">Study room</RouterLink>
+<RouterLink role="button" to="/student/dashboard" class="action-btn student">Test area</RouterLink>
 <RouterLink role="button" to="/apply-course" class="action-btn student">Apply for a new course</RouterLink>
 </div>
 </div>

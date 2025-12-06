@@ -4,13 +4,15 @@ import {RouterLink, RouterView} from "vue-router";
 import Modal from "./components/modal.vue";
 import {client} from "@composables/client";
 import {getRedirectResult, GoogleAuthProvider, signInWithCredential, signOut} from "firebase/auth";
+import ProfileIcon from "@/assets/profile.svg";
+import NotificationsIcon from "@/assets/notifications.svg";
 const modalRef = ref(null);
 const signInRef = ref(null);
 const buttonLabel = computed(() => {
 if (client.session) {
 const name = client?.session?.displayName || "User";
 const email = client?.session?.email || "No email";
-return `Signed in as ${name} (${email})`;
+return `Signed in as ${name} (${email}). Open Account menu`;
 } else {
 return "More options";
 }
@@ -36,18 +38,21 @@ console.error(error);
 };
 </script>
 <template>
+<div v-if="client.loading">
+<p>Loading...</p>
+</div>
+<div v-else>
 <header>
-<RouterLink role="button" to="/notifications">Notifications</RouterLink>
+<RouterLink role="button" to="/notifications" aria-label="Notifications"><img :src="NotificationsIcon" width="64px" height="64px"/></RouterLink>
 <div v-if="client.session">
-<Modal :showButton="true" :buttonLabel="buttonLabel" :title="buttonLabel" ref="modalRef">
+<button @click="modalRef.openModal" :aria-label="buttonLabel"><img :src="ProfileIcon" width="64px" height="64px" /></button>
+<Modal :showButton="false" :title="buttonLabel" ref="modalRef">
 <img v-if="client.session?.photoURL" :src="client.session.photoURL" alt="Profile photo" />
 <nav aria-label="Primary navigation container">
 <ul style="list-style-type:none;">
 <li><RouterLink role="button" to="/" @click="modalRef.closeModal()">Home</RouterLink></li>
-<li><RouterLink role="button" to="/courses" @click="modalRef.closeModal()">All Courses</RouterLink></li>
-<li><RouterLink role="button" to="/apply-course" @click="modalRef.closeModal()">Apply for a new course</RouterLink></li>
-<li><RouterLink role="button" to="/student/dashboard" @click="modalRef.closeModal()">View/attend Tests</RouterLink></li>
-<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/dashboard" @click="modalRef.closeModal()">Admin Dashboard</RouterLink></li>
+<li v-if="client.session && client.session.role_num > 5"><a role="button" href="https://adminconsole.saintjosephsacademyfoundation.org">Admin Dashboard</a></li>
+<li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/dashboard" @click="modalRef.closeModal()">Test management Dashboard</RouterLink></li>
 <li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/test/create" @click="modalRef.closeModal()">Create test</RouterLink></li>
 <li v-if="client.session && client.session.role_num > 5"><RouterLink role="button" to="/admin/submissions" @click="modalRef.closeModal()">View Submissions</RouterLink></li>
 <!--
@@ -75,6 +80,7 @@ console.error(error);
 
 </footer>
 <Toaster />
+</div>
 </template>
 <style scoped>
 .admin-badge {

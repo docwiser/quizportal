@@ -45,6 +45,7 @@ toaster.addToast(error.message, "error");
 <input type="password" id="password" v-model="password" required="" placeholder="Type your account password" />
 <input type="submit" value="Sign in" />
 </form>
+<RouterLink role="button" to="/forgot-password">Forgot password?</RouterLink>
 <a class="google-signin-btn" role="button" href="https://saintjosephsacademyfoundation.org/enrollment">Enroll as a new student</a>
 <!--
 <button 
