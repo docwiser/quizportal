@@ -31,26 +31,71 @@ const quizStarted = ref(false);
 const quizCompleted = ref(false);
 const submissionResult = ref(null);
 
-// server-based time
 const now = ref(new Date());
-const timerInterval = ref(null);
+const offsetMs = ref(0);
+let serverSyncInterval = null;
+let localTickInterval = null;
+let autoSubmitTimer = null;
 const quizStartAt = ref(null);
+
+const STORAGE_KEY = `quiz-progress-${route.params.id}`;
+
+function saveProgress() {
+try {
+localStorage.setItem(
+STORAGE_KEY,
+JSON.stringify({
+answers: answers.value,
+index: currentQuestionIndex.value,
+language: selectedLanguage.value,
+quizStarted: !!quizStarted.value,
+quizStartAt: quizStartAt.value ? quizStartAt.value.toISOString() : null
+})
+);
+} catch (e) {}
+}
+
+function restoreProgress() {
+try {
+const raw = localStorage.getItem(STORAGE_KEY);
+if (!raw) return;
+const data = JSON.parse(raw);
+const qlen = quiz.value?.questions?.length || 0;
+if (Array.isArray(data.answers)) {
+const restored = data.answers.slice(0, qlen);
+while (restored.length < qlen) restored.push(null);
+answers.value = restored;
+}
+if (typeof data.index === "number") {
+currentQuestionIndex.value = Math.max(0, Math.min((qlen || 1) - 1, data.index));
+}
+if (data.language) selectedLanguage.value = data.language;
+if (data.quizStarted) {
+quizStarted.value = true;
+showLanguageSelection.value = false;
+if (data.quizStartAt) {
+const d = new Date(data.quizStartAt);
+if (!Number.isNaN(d.getTime())) quizStartAt.value = d;
+else quizStartAt.value = new Date(Date.now() + offsetMs.value);
+} else {
+quizStartAt.value = new Date(Date.now() + offsetMs.value);
+}
+}
+} catch (e) {}
+}
 
 function parseDateStringFlexible(str) {
 if (!str || typeof str !== "string") return null;
-
 if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
 const [yyyy, mm, dd] = str.split("-").map(Number);
 const d = new Date(yyyy, mm - 1, dd);
 return Number.isNaN(d.getTime()) ? null : d;
 }
-
 if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
 const [dd, mm, yyyy] = str.split("-").map(Number);
 const d = new Date(yyyy, mm - 1, dd);
 return Number.isNaN(d.getTime()) ? null : d;
 }
-
 const d = new Date(str);
 return Number.isNaN(d.getTime()) ? null : d;
 }
@@ -58,7 +103,6 @@ return Number.isNaN(d.getTime()) ? null : d;
 function buildDateTime(dateStr, timeStr) {
 const base = parseDateStringFlexible(dateStr);
 if (!base) return null;
-
 if (!timeStr || typeof timeStr !== "string") return null;
 const [hh, mm] = timeStr.split(":").map(Number);
 if (
@@ -71,7 +115,6 @@ mm > 59
 ) {
 return null;
 }
-
 const d = new Date(base);
 d.setHours(hh, mm, 0, 0);
 return d;
@@ -104,7 +147,6 @@ return moment(d).format("hh:mm A");
 function formatDateRange(startDate, endDate) {
 const s = parseDateStringFlexible(startDate);
 const e = parseDateStringFlexible(endDate);
-
 if (!s && !e) return "Unknown date";
 if (s && e && s.toDateString() === e.toDateString()) {
 return `On ${formatDateHuman(startDate)}`;
@@ -123,7 +165,6 @@ const hours = Math.floor(s / 3600);
 s -= hours * 3600;
 const minutes = Math.floor(s / 60);
 s -= minutes * 60;
-
 const parts = [];
 if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
 if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? "s" : ""}`);
@@ -131,14 +172,31 @@ if (s > 0) parts.push(`${s} second${s !== 1 ? "s" : ""}`);
 return parts.join(" ");
 }
 
-// time window based on quiz document
+async function syncServerTime() {
+try {
+const response = await fetch("https://worldtimeapi.org/api/ip");
+if (!response.ok) throw new Error("Failed to fetch server time");
+const data = await response.json();
+const iso = data.utc_datetime || data.datetime;
+const serverNow = moment(iso).toDate();
+offsetMs.value = serverNow.getTime() - Date.now();
+now.value = new Date(Date.now() + offsetMs.value);
+} catch (err) {
+now.value = new Date(Date.now() + offsetMs.value);
+}
+}
+
 const startDateTime = computed(() => {
 if (!quiz.value) return null;
-return buildDateTime(quiz.value.startDate, quiz.value.startTime);
+const s = buildDateTime(quiz.value.startDate, quiz.value.startTime);
+if (!s) return null;
+return new Date(s.getTime());
 });
 const endDateTime = computed(() => {
 if (!quiz.value) return null;
-return buildDateTime(quiz.value.endDate, quiz.value.endTime);
+const e = buildDateTime(quiz.value.endDate, quiz.value.endTime);
+if (!e) return null;
+return new Date(e.getTime());
 });
 
 const hasWindowStarted = computed(() => {
@@ -197,25 +255,6 @@ const v = quiz.value?.hasNegativeMarking;
 return v === true || v === "true";
 };
 
-// fetch time from time API so device clock changes can't bypass schedule
-async function syncServerTime() {
-try {
-const response = await fetch("https://worldtimeapi.org/api/ip");
-if (!response.ok) {
-throw new Error("Failed to fetch server time");
-}
-const data = await response.json();
-const iso = data.utc_datetime || data.datetime;
-const serverNow = moment(iso).toDate();
-now.value = serverNow;
-} catch (err) {
-console.error("Error syncing server time:", err);
-if (!now.value) {
-now.value = new Date();
-}
-}
-}
-
 onMounted(async () => {
 try {
 if (!client?.session?.uid) {
@@ -233,6 +272,15 @@ return;
 
 quiz.value = { id: quizDoc.id, ...quizDoc.data() };
 
+const qlen = quiz.value.questions?.length || 0;
+answers.value = new Array(qlen).fill(null);
+
+if (quiz.value.languagePermission === "hindi") {
+selectedLanguage.value = "hindi";
+} else {
+selectedLanguage.value = "english";
+}
+
 const batchesQuery = query(
 collection(client.firestore, "batches"),
 where("users", "array-contains", client.session.uid)
@@ -240,25 +288,12 @@ where("users", "array-contains", client.session.uid)
 const batchesSnapshot = await getDocs(batchesQuery);
 const userBatches = batchesSnapshot.docs.map((d) => d.id);
 
-const quizBatches = Array.isArray(quiz.value.batches)
-? quiz.value.batches
-: [];
-const hasAccess =
-quizBatches.length > 0 &&
-quizBatches.some((bid) => userBatches.includes(bid));
-
+const quizBatches = Array.isArray(quiz.value.batches) ? quiz.value.batches : [];
+const hasAccess = quizBatches.length > 0 && quizBatches.some((bid) => userBatches.includes(bid));
 if (!hasAccess) {
 toaster.addToast("You do not have access to this test.", "error");
 router.goBack();
 return;
-}
-
-answers.value = new Array(quiz.value.questions?.length || 0).fill(null);
-
-if (quiz.value.languagePermission === "hindi") {
-selectedLanguage.value = "hindi";
-} else {
-selectedLanguage.value = "english";
 }
 
 const existingSubmissionQuery = query(
@@ -299,15 +334,28 @@ showLanguageSelection.value = false;
 quizStarted.value = false;
 loading.value = false;
 
-toaster.addToast(
-"You have already taken this test. Showing your results.",
-"success"
-);
+toaster.addToast("You have already taken this test. Showing your results.", "success");
 return;
 }
 
 await syncServerTime();
-timerInterval.value = setInterval(syncServerTime, 1000);
+restoreProgress();
+localTickInterval = setInterval(() => {
+now.value = new Date(Date.now() + offsetMs.value);
+}, 1000);
+serverSyncInterval = setInterval(syncServerTime, 15000);
+
+if (quizStarted.value && !quizCompleted.value && endDateTime.value) {
+const remainingMs = endDateTime.value.getTime() - (Date.now() + offsetMs.value);
+if (remainingMs <= 0) {
+autoSubmitQuiz();
+} else {
+if (autoSubmitTimer) clearTimeout(autoSubmitTimer);
+autoSubmitTimer = setTimeout(() => {
+if (!quizCompleted.value) autoSubmitQuiz();
+}, remainingMs);
+}
+}
 
 loading.value = false;
 } catch (error) {
@@ -320,12 +368,7 @@ router.push("/student/dashboard");
 watch(now, () => {
 if (!quiz.value || loading.value) return;
 
-if (
-!quizStarted.value &&
-!quizCompleted.value &&
-showLanguageSelection.value &&
-canStartNow.value
-) {
+if (!quizStarted.value && !quizCompleted.value && showLanguageSelection.value && canStartNow.value) {
 startQuiz();
 }
 
@@ -340,22 +383,12 @@ return quiz.value?.questions?.[currentQuestionIndex.value] || null;
 
 function getQuestionText(question) {
 if (!question || !question.text) return "";
-return (
-question.text[selectedLanguage.value] ||
-question.text.english ||
-question.text.hindi ||
-""
-);
+return question.text[selectedLanguage.value] || question.text.english || question.text.hindi || "";
 }
 
 function getOptionText(option) {
 if (!option) return "";
-return (
-option[selectedLanguage.value] ||
-option.english ||
-option.hindi ||
-""
-);
+return option[selectedLanguage.value] || option.english || option.hindi || "";
 }
 
 function formatTime(seconds) {
@@ -363,66 +396,62 @@ if (!Number.isFinite(seconds) || seconds < 0) seconds = 0;
 const hours = Math.floor(seconds / 3600);
 const minutes = Math.floor((seconds % 3600) / 60);
 const secs = seconds % 60;
-
 if (hours > 0) {
-return `${hours.toString().padStart(2, "0")}:${minutes
-.toString()
-.padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
-return `${minutes.toString().padStart(2, "0")}:${secs
-.toString()
-.padStart(2, "0")}`;
+return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
 function startQuiz() {
 if (!canStartNow.value || quizStarted.value || quizCompleted.value) return;
 showLanguageSelection.value = false;
 quizStarted.value = true;
-quizStartAt.value = new Date(now.value);
-toaster.addToast(
-"Test started. It will be submitted automatically when the test end time is reached.",
-"success"
-);
+quizStartAt.value = new Date(Date.now() + offsetMs.value);
+saveProgress();
+if (autoSubmitTimer) clearTimeout(autoSubmitTimer);
+if (endDateTime.value) {
+const remainingMs = endDateTime.value.getTime() - (Date.now() + offsetMs.value);
+if (remainingMs <= 0) {
+autoSubmitQuiz();
+} else {
+autoSubmitTimer = setTimeout(() => {
+if (!quizCompleted.value) autoSubmitQuiz();
+}, remainingMs);
+}
+}
+toaster.addToast("Test started. It will be submitted automatically when the test end time is reached.", "success");
 }
 
 function nextQuestion() {
 if (currentQuestionIndex.value < (quiz.value?.questions?.length || 0) - 1) {
 currentQuestionIndex.value++;
-toaster.addToast(
-`Question: ${getQuestionText(currentQuestion.value)}`,
-"success"
-);
+toaster.addToast(`Question: ${getQuestionText(currentQuestion.value)}`, "success");
+saveProgress();
 }
 }
 
 function previousQuestion() {
 if (currentQuestionIndex.value > 0) {
 currentQuestionIndex.value--;
-toaster.addToast(
-`Question: ${getQuestionText(currentQuestion.value)}`,
-"success"
-);
+toaster.addToast(`Question: ${getQuestionText(currentQuestion.value)}`, "success");
+saveProgress();
 }
 }
 
 function goToQuestion(index) {
-if (!quiz.value?.questions || index < 0 || index >= quiz.value.questions.length)
-return;
+if (!quiz.value?.questions || index < 0 || index >= quiz.value.questions.length) return;
 currentQuestionIndex.value = index;
-toaster.addToast(
-`Question: ${getQuestionText(currentQuestion.value)}`,
-"success"
-);
+toaster.addToast(`Question: ${getQuestionText(currentQuestion.value)}`, "success");
+saveProgress();
 }
 
 function updateAnswer(value) {
 answers.value[currentQuestionIndex.value] = value;
+saveProgress();
 }
 
 const questionsAttempted = computed(() => {
-return answers.value.filter(
-(answer) => answer !== null && answer !== ""
-).length;
+return answers.value.filter((answer) => answer !== null && answer !== "").length;
 });
 
 const questionsLeft = computed(() => {
@@ -434,10 +463,8 @@ let score = 0;
 let correctAnswers = 0;
 let incorrectAnswers = 0;
 const negativeEnabled = hasNegativeMarkingEnabled();
-
 (quiz.value?.questions || []).forEach((question, index) => {
 const userAnswer = answers.value[index];
-
 if (userAnswer !== null && userAnswer !== "") {
 if (question.type === "multiple-choice") {
 if (parseInt(userAnswer) === question.correctAnswer) {
@@ -445,9 +472,7 @@ score += question.points || 1;
 correctAnswers++;
 } else {
 incorrectAnswers++;
-if (negativeEnabled) {
-score -= question.negativeMarking ?? 0.25;
-}
+if (negativeEnabled) score -= question.negativeMarking ?? 0.25;
 }
 } else if (question.type === "true-false") {
 if (userAnswer === question.correctAnswer) {
@@ -455,42 +480,26 @@ score += question.points || 1;
 correctAnswers++;
 } else {
 incorrectAnswers++;
-if (negativeEnabled) {
-score -= question.negativeMarking ?? 0.25;
-}
+if (negativeEnabled) score -= question.negativeMarking ?? 0.25;
 }
 }
 }
 });
-
 return { score: Math.max(0, score), correctAnswers, incorrectAnswers };
 }
 
 async function submitQuiz() {
 if (submitting.value || quizCompleted.value) return;
-
 submitting.value = true;
 toaster.addToast("Processing, please wait...", "success");
-
 try {
 const result = calculateScore();
-const timeSpentSeconds = quizStartAt.value
-? Math.max(
-0,
-Math.floor(
-(now.value.getTime() - quizStartAt.value.getTime()) / 1000
-)
-)
-: null;
-
+const timeSpentSeconds = quizStartAt.value ? Math.max(0, Math.floor((now.value.getTime() - quizStartAt.value.getTime()) / 1000)) : null;
 const submission = {
 userId: client.session.uid,
 quizId: quiz.value.id,
 batches: Array.isArray(quiz.value.batches) ? quiz.value.batches : [],
-answers: answers.value.map((answer, index) => ({
-questionIndex: index,
-studentAnswer: answer
-})),
+answers: answers.value.map((answer, index) => ({ questionIndex: index, studentAnswer: answer })),
 score: result.score,
 correctAnswers: result.correctAnswers,
 incorrectAnswers: result.incorrectAnswers,
@@ -498,22 +507,15 @@ timeSpent: timeSpentSeconds,
 language: selectedLanguage.value,
 timestamp: new Date()
 };
-
 await addDoc(collection(client.firestore, "quiz-submissions"), submission);
-
-submissionResult.value = {
-...result,
-totalQuestions: quiz.value.questions.length,
-timeSpent: timeSpentSeconds
-};
-
+submissionResult.value = { ...result, totalQuestions: quiz.value.questions.length, timeSpent: timeSpentSeconds };
 quizCompleted.value = true;
 quizStarted.value = false;
-
-if (timerInterval.value) {
-clearInterval(timerInterval.value);
+if (autoSubmitTimer) {
+clearTimeout(autoSubmitTimer);
+autoSubmitTimer = null;
 }
-
+try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
 toaster.addToast("Test submitted successfully!", "success");
 } catch (error) {
 console.error("Error submitting quiz:", error);
@@ -525,28 +527,20 @@ submitting.value = false;
 
 function autoSubmitQuiz() {
 if (quizCompleted.value || submitting.value) return;
-toaster.addToast(
-"The test time has ended. Your test is being submitted automatically.",
-"error"
-);
+toaster.addToast("The test time has ended. Your test is being submitted automatically.", "error");
 submitQuiz();
 }
 
 function generateResultPDF() {
 if (!quiz.value || !submissionResult.value) return;
-
 const docPdf = new jsPDF();
 const pageWidth = docPdf.internal.pageSize.width;
 const margin = 20;
 let yPosition = margin;
-
 docPdf.setFontSize(20);
 docPdf.setFont(undefined, "bold");
-docPdf.text("Test Result Report", pageWidth / 2, yPosition, {
-align: "center"
-});
+docPdf.text("Test Result Report", pageWidth / 2, yPosition, { align: "center" });
 yPosition += 20;
-
 docPdf.setFontSize(12);
 docPdf.setFont(undefined, "normal");
 docPdf.text(`Test: ${quiz.value.name}`, margin, yPosition);
@@ -555,78 +549,38 @@ docPdf.text(`Student: ${client.session.displayName}`, margin, yPosition);
 yPosition += 10;
 docPdf.text(`Date: ${new Date().toLocaleDateString()}`, margin, yPosition);
 yPosition += 10;
-docPdf.text(
-`Language: ${
-selectedLanguage.value.charAt(0).toUpperCase() +
-selectedLanguage.value.slice(1)
-}`,
-margin,
-yPosition
-);
+docPdf.text(`Language: ${selectedLanguage.value.charAt(0).toUpperCase() + selectedLanguage.value.slice(1)}`, margin, yPosition);
 yPosition += 20;
-
 docPdf.setFont(undefined, "bold");
 docPdf.text("Summary:", margin, yPosition);
 yPosition += 10;
-
 docPdf.setFont(undefined, "normal");
-docPdf.text(
-`Total Questions: ${submissionResult.value.totalQuestions}`,
-margin,
-yPosition
-);
+docPdf.text(`Total Questions: ${submissionResult.value.totalQuestions}`, margin, yPosition);
 yPosition += 8;
-docPdf.text(
-`Correct Answers: ${submissionResult.value.correctAnswers}`,
-margin,
-yPosition
-);
+docPdf.text(`Correct Answers: ${submissionResult.value.correctAnswers}`, margin, yPosition);
 yPosition += 8;
-docPdf.text(
-`Incorrect Answers: ${submissionResult.value.incorrectAnswers}`,
-margin,
-yPosition
-);
+docPdf.text(`Incorrect Answers: ${submissionResult.value.incorrectAnswers}`, margin, yPosition);
 yPosition += 8;
-docPdf.text(
-`Score: ${submissionResult.value.score.toFixed(2)} points`,
-margin,
-yPosition
-);
+docPdf.text(`Score: ${submissionResult.value.score.toFixed(2)} points`, margin, yPosition);
 yPosition += 20;
-
 docPdf.setFont(undefined, "bold");
 docPdf.text("Questions and Answers:", margin, yPosition);
 yPosition += 15;
-
 (quiz.value.questions || []).forEach((question, index) => {
 if (yPosition > 250) {
 docPdf.addPage();
 yPosition = margin;
 }
-
 docPdf.setFont(undefined, "bold");
-docPdf.text(
-`Q${index + 1}. ${getQuestionText(question)}`,
-margin,
-yPosition,
-{
-maxWidth: pageWidth - 2 * margin
-}
-);
+docPdf.text(`Q${index + 1}. ${getQuestionText(question)}`, margin, yPosition, { maxWidth: pageWidth - 2 * margin });
 yPosition += 15;
-
 docPdf.setFont(undefined, "normal");
-
 if (question.type === "multiple-choice") {
 question.options.forEach((option, optIndex) => {
-const optionText = `${String.fromCharCode(
-65 + optIndex
-)}. ${getOptionText(option)}`;
+const optionText = `${String.fromCharCode(65 + optIndex)}. ${getOptionText(option)}`;
 const userAnswer = answers.value[index];
 const isUserAnswer = userAnswer === optIndex;
 const isCorrectAnswer = question.correctAnswer === optIndex;
-
 if (isUserAnswer && isCorrectAnswer) {
 docPdf.setTextColor(0, 128, 0);
 } else if (isUserAnswer) {
@@ -636,25 +590,15 @@ docPdf.setTextColor(0, 0, 255);
 } else {
 docPdf.setTextColor(0, 0, 0);
 }
-
-docPdf.text(optionText, margin + 10, yPosition, {
-maxWidth: pageWidth - 2 * margin - 10
-});
+docPdf.text(optionText, margin + 10, yPosition, { maxWidth: pageWidth - 2 * margin - 10 });
 yPosition += 8;
 });
-
 docPdf.setTextColor(0, 0, 0);
 const ua = answers.value[index];
-const userAnswerText =
-ua !== null && ua !== undefined
-? `Your Answer: ${String.fromCharCode(65 + ua)}`
-: "Your Answer: Not attempted";
+const userAnswerText = ua !== null && ua !== undefined ? `Your Answer: ${String.fromCharCode(65 + ua)}` : "Your Answer: Not attempted";
 docPdf.text(userAnswerText, margin, yPosition);
 yPosition += 8;
-
-const correctAnswerText = `Correct Answer: ${String.fromCharCode(
-65 + question.correctAnswer
-)}`;
+const correctAnswerText = `Correct Answer: ${String.fromCharCode(65 + question.correctAnswer)}`;
 docPdf.text(correctAnswerText, margin, yPosition);
 yPosition += 15;
 } else {
@@ -663,16 +607,13 @@ docPdf.text(`Your Answer: ${String(ua)}`, margin, yPosition);
 yPosition += 15;
 }
 });
-
-docPdf.save(
-`${quiz.value.name}_Result_${new Date().toISOString().split("T")[0]}.pdf`
-);
+docPdf.save(`${quiz.value.name}_Result_${new Date().toISOString().split("T")[0]}.pdf`);
 }
 
 onUnmounted(() => {
-if (timerInterval.value) {
-clearInterval(timerInterval.value);
-}
+if (serverSyncInterval) clearInterval(serverSyncInterval);
+if (localTickInterval) clearInterval(localTickInterval);
+if (autoSubmitTimer) clearTimeout(autoSubmitTimer);
 });
 
 const handleBeforeUnload = (e) => {
@@ -698,12 +639,10 @@ window.removeEventListener("beforeunload", handleBeforeUnload);
 <template>
 <div class="quiz-take">
 <Head title="Take Test" />
-
 <div v-if="loading" class="loading">
 <p>Loading test...</p>
 </div>
 
-<!-- Already completed (including past attempts) -->
 <div v-else-if="quizCompleted && submissionResult" class="quiz-completed">
 <div class="result-card">
 <h1>You’ve finished this test</h1>
@@ -718,94 +657,44 @@ window.removeEventListener("beforeunload", handleBeforeUnload);
 </div>
 <div class="stat-item">
 <span class="stat-label">Correct Answers:</span>
-<span class="stat-value correct">
-{{ submissionResult.correctAnswers }}
-</span>
+<span class="stat-value correct">{{ submissionResult.correctAnswers }}</span>
 </div>
 <div class="stat-item">
 <span class="stat-label">Incorrect Answers:</span>
-<span class="stat-value incorrect">
-{{ submissionResult.incorrectAnswers }}
-</span>
+<span class="stat-value incorrect">{{ submissionResult.incorrectAnswers }}</span>
 </div>
 <div class="stat-item">
 <span class="stat-label">Final Score:</span>
-<span class="stat-value score">
-{{ submissionResult.score.toFixed(2) }} points
-</span>
+<span class="stat-value score">{{ submissionResult.score.toFixed(2) }} points</span>
 </div>
 </div>
 </div>
 
 <div class="result-actions">
-<button @click="generateResultPDF" class="pdf-btn">
-Download Result PDF
-</button>
-<RouterLink role="button" to="/student/dashboard" class="back-btn">
-Back to Dashboard
-</RouterLink>
+<button @click="generateResultPDF" class="pdf-btn">Download Result PDF</button>
+<RouterLink role="button" to="/student/dashboard" class="back-btn">Back to Dashboard</RouterLink>
 </div>
 </div>
 </div>
 
-<!-- Language selection / pre-start screen -->
-<div
-v-else-if="showLanguageSelection && quiz && !quizStarted"
-class="language-selection"
->
+<div v-else-if="showLanguageSelection && quiz && !quizStarted" class="language-selection">
 <div class="selection-card">
 <h1>{{ quiz.name }}</h1>
 <p>{{ quiz.description }}</p>
 
 <div class="quiz-info">
 <div class="info-item">
-<strong>Available:</strong>
-{{ formatDateRange(quiz.startDate, quiz.endDate) }}
+<strong>Available:</strong> {{ formatDateRange(quiz.startDate, quiz.endDate) }}
 </div>
 <div class="info-item">
-<strong>Daily test window:</strong>
-{{ formatTimeHuman(quiz.startTime) }} – {{ formatTimeHuman(quiz.endTime) }}
+<strong>Daily test window:</strong> {{ formatTimeHuman(quiz.startTime) }} – {{ formatTimeHuman(quiz.endTime) }}
 </div>
 <div class="info-item">
 <strong>Total Questions:</strong> {{ quiz.questions?.length || 0 }}
 </div>
 <div class="info-item">
-<strong>Negative Marking:</strong>
-{{ hasNegativeMarkingEnabled() ? "Yes" : "No" }}
+<strong>Negative Marking:</strong> {{ hasNegativeMarkingEnabled() ? "Yes" : "No" }}
 </div>
-</div>
-
-<!-- language selection kept hidden for testing as requested -->
-<div class="language-options" hidden>
-<h3>Select Language / भाषा चुनें</h3>
-<div v-if="canSwitchLanguage" class="language-buttons">
-<button
-@click="selectedLanguage = 'english'"
-:class="{ active: selectedLanguage === 'english' }"
-class="language-btn"
-:aria-current="selectedLanguage === 'english'"
->
-English
-</button>
-<button
-@click="selectedLanguage = 'hindi'"
-:class="{ active: selectedLanguage === 'hindi' }"
-class="language-btn"
-:aria-current="selectedLanguage === 'hindi'"
->
-Hindi (हिंदी)
-</button>
-</div>
-<p v-else class="language-fixed">
-Test language:
-<strong>
-{{
-quiz.languagePermission === "hindi"
-? "Hindi only"
-: "English only"
-}}
-</strong>
-</p>
 </div>
 
 <div class="start-section">
@@ -814,46 +703,27 @@ quiz.languagePermission === "hindi"
 <ul>
 <li>Read each question carefully.</li>
 <li>You can navigate between questions using Previous/Next buttons.</li>
-<li>
-The test will be submitted automatically at
-{{ formatDateHuman(quiz.endDate) }}
-{{ formatTimeHuman(quiz.endTime) }}.
-</li>
+<li>The test will be submitted automatically at {{ formatDateHuman(quiz.endDate) }} {{ formatTimeHuman(quiz.endTime) }}.</li>
 <li>Make sure you have a stable internet connection.</li>
 <li>You can only take this test once.</li>
 </ul>
 </div>
 
-<!-- Only shown before the test has been started -->
 <p class="test-end-info">
 This test will end on
-<strong>
-{{ formatDateHuman(quiz.endDate) }}
-at
-{{ formatTimeHuman(quiz.endTime) }}
-</strong>
-.
+<strong>{{ formatDateHuman(quiz.endDate) }} at {{ formatTimeHuman(quiz.endTime) }}</strong>.
 </p>
 
-<button
-@click="startQuiz"
-class="start-btn"
-:disabled="!canStartNow || quizStarted"
->
+<button @click="startQuiz" class="start-btn" :disabled="!canStartNow || quizStarted">
 {{ startButtonLabel }}
 </button>
 </div>
 </div>
 </div>
 
-<!-- Quiz Interface -->
 <div v-else-if="quizStarted && quiz" class="quiz-interface">
 <div class="timer-section">
-<div
-class="timer"
-:class="{ warning: timeRemaining < 300, critical: timeRemaining < 60 }"
-aria-atomic="true"
->
+<div class="timer" :class="{ warning: timeRemaining < 300, critical: timeRemaining < 60 }" aria-atomic="true">
 <span class="timer-icon">⏱️</span>
 <span class="timer-text">{{ formatTime(timeRemaining) }}</span>
 </div>
@@ -861,127 +731,50 @@ aria-atomic="true"
 
 <div class="question-section">
 <div class="question-header">
-<h2>
-Question {{ currentQuestionIndex + 1 }} of
-{{ quiz.questions?.length || 0 }}
-</h2>
+<h2>Question {{ currentQuestionIndex + 1 }} of {{ quiz.questions?.length || 0 }}</h2>
 
 <div class="language-switch" v-if="canSwitchLanguage">
-<button
-@click="selectedLanguage = selectedLanguage === 'english' ? 'hindi' : 'english'"
-class="switch-lang-btn"
->
-Switch to
-{{ selectedLanguage === "english" ? "हिंदी" : "English" }}
+<button @click="selectedLanguage = selectedLanguage === 'english' ? 'hindi' : 'english'" class="switch-lang-btn">
+Switch to {{ selectedLanguage === "english" ? "हिंदी" : "English" }}
 </button>
 </div>
 </div>
 
 <div class="question-content">
-<div class="question-text">
-{{ getQuestionText(currentQuestion) }}
-</div>
+<div class="question-text">{{ getQuestionText(currentQuestion) }}</div>
 
-<div
-v-if="currentQuestion?.type === 'multiple-choice'"
-class="answer-options"
->
-<label
-v-for="(option, index) in currentQuestion.options"
-:key="index"
-class="option-label"
->
-<input
-type="radio"
-:name="`question-${currentQuestionIndex}`"
-:value="index"
-:checked="answers[currentQuestionIndex] === index"
-@change="updateAnswer(index)"
-/>
-<span class="option-text">
-<span class="option-letter">
-{{ String.fromCharCode(65 + index) }}.
-</span>
-{{ getOptionText(option) }}
-</span>
+<div v-if="currentQuestion?.type === 'multiple-choice'" class="answer-options" role="radiogroup">
+<label v-for="(option, index) in currentQuestion.options" :key="index" class="option-label">
+<input type="radio" :name="`question-${currentQuestionIndex}`" :value="index" :checked="answers[currentQuestionIndex] === index" @change="updateAnswer(index)" />
+<span class="option-text">{{ String.fromCharCode(65 + index) }}. {{ getOptionText(option) }}</span>
 </label>
 </div>
-
-<div
-v-else-if="currentQuestion?.type === 'true-false'"
-class="answer-options"
->
+<div v-else-if="currentQuestion?.type === 'true-false'" class="answer-options">
 <label class="option-label">
-<input
-type="radio"
-:name="`question-${currentQuestionIndex}`"
-value="true"
-:checked="answers[currentQuestionIndex] === 'true'"
-@change="updateAnswer('true')"
-/>
+<input type="radio" :name="`question-${currentQuestionIndex}`" value="true" :checked="answers[currentQuestionIndex] === 'true'" @change="updateAnswer('true')" />
 <span class="option-text">True</span>
 </label>
 <label class="option-label">
-<input
-type="radio"
-:name="`question-${currentQuestionIndex}`"
-value="false"
-:checked="answers[currentQuestionIndex] === 'false'"
-@change="updateAnswer('false')"
-/>
+<input type="radio" :name="`question-${currentQuestionIndex}`" value="false" :checked="answers[currentQuestionIndex] === 'false'" @change="updateAnswer('false')" />
 <span class="option-text">False</span>
 </label>
 </div>
 
-<div
-v-else-if="currentQuestion?.type === 'short-answer'"
-class="answer-input"
->
-<input
-type="text"
-:value="answers[currentQuestionIndex] || ''"
-@input="updateAnswer($event.target.value)"
-placeholder="Enter your answer..."
-class="text-input"
-/>
+<div v-else-if="currentQuestion?.type === 'short-answer'" class="answer-input">
+<input type="text" :value="answers[currentQuestionIndex] || ''" @input="updateAnswer($event.target.value)" placeholder="Enter your answer..." class="text-input" />
 </div>
 
-<div
-v-else-if="currentQuestion?.type === 'essay'"
-class="answer-input"
->
-<textarea
-:value="answers[currentQuestionIndex] || ''"
-@input="updateAnswer($event.target.value)"
-placeholder="Write your essay answer..."
-class="essay-input"
-rows="6"
-></textarea>
+<div v-else-if="currentQuestion?.type === 'essay'" class="answer-input">
+<textarea :value="answers[currentQuestionIndex] || ''" @input="updateAnswer($event.target.value)" placeholder="Write your essay answer..." class="essay-input" rows="6"></textarea>
 </div>
 </div>
 </div>
 
 <div class="navigation-section">
 <div class="nav-buttons" role="nav" aria-label="change question">
-<button
-@click="previousQuestion"
-:disabled="currentQuestionIndex === 0"
-class="nav-btn prev-btn"
-title="Go to the previous question"
-accesskey="p"
->
-← Previous
-</button>
+<button @click="previousQuestion" :disabled="currentQuestionIndex === 0" class="nav-btn prev-btn" title="Go to the previous question" accesskey="p">← Previous</button>
 
-<button
-@click="nextQuestion"
-:disabled="currentQuestionIndex === (quiz.questions?.length || 0) - 1"
-class="nav-btn next-btn"
-title="Go to the next question"
-accesskey="n"
->
-Next →
-</button>
+<button @click="nextQuestion" :disabled="currentQuestionIndex === (quiz.questions?.length || 0) - 1" class="nav-btn next-btn" title="Go to the next question" accesskey="n">Next →</button>
 </div>
 </div>
 
@@ -1000,37 +793,18 @@ Next →
 </div>
 
 <div class="question-grid" role="nav" aria-label="Questions list">
-<button
-v-for="(question, index) in quiz.questions"
-:key="index"
-@click="goToQuestion(index)"
-:class="{
-current: index === currentQuestionIndex,
-attempted: answers[index] !== null && answers[index] !== '',
-unattempted: answers[index] === null || answers[index] === ''
-}"
-class="question-nav-btn"
-:aria-current="index === currentQuestionIndex"
-:disabled="index === currentQuestionIndex"
->
+<button v-for="(question, index) in quiz.questions" :key="index" @click="goToQuestion(index)" :class="{ current: index === currentQuestionIndex, attempted: answers[index] !== null && answers[index] !== '', unattempted: answers[index] === null || answers[index] === '' }" class="question-nav-btn" :aria-current="index === currentQuestionIndex" :disabled="index === currentQuestionIndex">
 {{ index + 1 }}
 </button>
 </div>
 
 <div class="submit-section">
-<button
-@click="submitQuiz"
-:disabled="submitting"
-class="submit-btn"
->
-{{ submitting ? "Submitting..." : "Submit Test" }}
-</button>
+<button @click="submitQuiz" :disabled="submitting" class="submit-btn">{{ submitting ? "Submitting..." : "Submit Test" }}</button>
 </div>
 </div>
 </div>
 </div>
 
-<!-- Fallback (no quiz / no state) -->
 <div v-else-if="quiz">
 <p>Something went wrong loading the test interface.</p>
 </div>
@@ -1049,7 +823,6 @@ text-align: center;
 padding: 3rem;
 }
 
-/* Language Selection */
 .language-selection {
 display: flex;
 justify-content: center;
@@ -1174,7 +947,6 @@ transform: translateY(-1px);
 box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
 }
 
-/* Quiz Interface */
 .quiz-interface {
 display: grid;
 gap: 1.5rem;
@@ -1465,7 +1237,6 @@ opacity: 0.7;
 cursor: not-allowed;
 }
 
-/* Quiz Completed */
 .quiz-completed {
 display: flex;
 justify-content: center;
@@ -1571,30 +1342,11 @@ background: #545b62;
 }
 
 @media (max-width: 768px) {
-.quiz-take {
-padding: 0.5rem;
-}
-
-.question-header {
-flex-direction: column;
-align-items: stretch;
-}
-
-.summary-stats {
-flex-direction: column;
-gap: 1rem;
-}
-
-.nav-buttons {
-flex-direction: column;
-}
-
-.result-actions {
-flex-direction: column;
-}
-
-.language-buttons {
-flex-direction: column;
-}
+.quiz-take { padding: 0.5rem; }
+.question-header { flex-direction: column; align-items: stretch; }
+.summary-stats { flex-direction: column; gap: 1rem; }
+.nav-buttons { flex-direction: column; }
+.result-actions { flex-direction: column; }
+.language-buttons { flex-direction: column; }
 }
 </style>

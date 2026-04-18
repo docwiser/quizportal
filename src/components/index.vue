@@ -4,14 +4,79 @@
 <Head title="providing free and affordable preparation for a wide range of competitive exams conducted by the Government of India" />
 <div class="hero-section">
 <h1>Saint Joseph's Academy</h1>
-<p>Your gateway to learning, growth, and career opportunities. Explore our study resources, test area, and member-only benefits designed to empower students, women, and Divyang learners.</p>
+<!-- <p>Your gateway to learning, growth, and career opportunities. Explore our study resources, test area, and member-only benefits designed to empower students, women, and Divyang learners.</p> -->
 </div>
 <div v-if="!client.session" class="auth-prompt">
 <div class="auth-card">
 <h3>Get Started</h3>
 <p>Sign in to access your enrolled courses, apply for a new course, view/attend tests, and much more</p>
 <RouterLink role="button" to="/login" class="auth-btn">Sign In</RouterLink>
-<a role="button" href="https://saintjosephsacademyfoundation.org/enrollment" class="auth-btn">Enroll as a new student</a>
+<p>
+If you do not have an account, please submit the enrollment form first.
+After your enrollment is reviewed and approved, your login ID and password
+will be sent to your registered email address.
+</p>
+<a role="button" href="ext:https://saintjosephsacademyfoundation.org/enrollment" class="auth-btn">Enroll as a new student</a>
+<p>
+For any assistance or support, please contact us.
+</p>
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/contact/" role="button">
+Contact Us
+</a>
+</p>
+
+<hr>
+
+<p>
+By signing in or enrolling, you agree to the following policies:
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/app-terms-and-conditions/" role="button">
+Terms &amp; Conditions
+</a>
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/app-privacy-policy/" role="button">
+Privacy Policy
+</a>
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/enrollment-policy/" role="button">
+Enrollment Policy
+</a>
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/app-refund-and-cancellation-policy/" role="button">
+Refund and Cancellation Policy
+</a>
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/account-and-data-deletion-policy/" role="button">
+Account &amp; Data Deletion Policy
+</a>
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/content-and-test-disclaimer/" role="button">
+Content and Test Disclaimer
+</a>
+</p>
+
+<p>
+<a href="https://www.saintjosephsacademyfoundation.org/government-exam-disclaimer/" role="button">
+Government Exam Disclaimer
+</a>
+</p>
+
+<p>
+Enrollment is subject to eligibility criteria and academy policies.
+</p>
 </div>
 </div>
 <div v-else class="dashboard-redirect">

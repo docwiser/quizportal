@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { client } from '@composables/client';
 import { useToast } from '@composables/toast';
 import { useRouter, useRoute } from 'vue-router';
+import Modal from '@components/modal.vue';
 const toaster = useToast();
 const router = useRouter();
 const route = useRoute();
@@ -17,6 +18,8 @@ const questionTypes = [
 { value: 'essay', label: 'Essay' }
 ];
 const languages = ['english', 'hindi'];
+const fileInput = ref(null);
+const showGuide = ref(false);
 onMounted(async () => {
 try {
 const quizDoc = await getDoc(doc(client.firestore, 'quizzes', route.params.id));
@@ -69,6 +72,50 @@ questions.value[questionIndex].correctAnswer = 0;
 }
 }
 };
+const uploadQuestions = () => {
+  fileInput.value.click();
+};
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const content = JSON.parse(e.target.result);
+      if (Array.isArray(content)) {
+        const newQuestions = content.map(q => ({
+          ...q,
+          id: q.id || Date.now().toString() + Math.random().toString(36).substr(2, 9)
+        }));
+        questions.value.push(...newQuestions);
+        toaster.addToast(`Successfully added ${newQuestions.length} questions`, 'success');
+      } else {
+        toaster.addToast('Invalid file format: Expected an array of questions', 'error');
+      }
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
+      toaster.addToast('Failed to parse JSON file', 'error');
+    }
+    // Reset file input
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+};
+
+const exportQuestions = () => {
+  const dataStr = JSON.stringify(questions.value, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  
+  const exportFileDefaultName = `${quiz.value?.name || 'quiz'}_questions.json`;
+  
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', exportFileDefaultName);
+  linkElement.click();
+};
+
 const saveQuiz = async () => {
 try {
 // Validate questions
@@ -113,6 +160,26 @@ toaster.addToast('Failed to save quiz', 'error');
 <p>Loading test...</p>
 </div>
 <div v-else>
+      <div class="tools-section">
+        <div class="tool-buttons">
+          <input 
+            type="file" 
+            ref="fileInput" 
+            @change="handleFileUpload" 
+            accept=".json" 
+            style="display: none"
+          >
+          <button @click="uploadQuestions" class="btn secondary">
+            Upload Questions (JSON)
+          </button>
+          <button @click="exportQuestions" class="btn secondary">
+            Export Questions
+          </button>
+          <button @click="showGuide = true" class="btn text-btn">
+            Guide to create template
+          </button>
+        </div>
+      </div>
 <h1>Add Questions to "{{ quiz?.name }}"</h1>
 <p>Create questions for your test. Students will see these in the order you create them.</p>
 <div class="questions-container" role="region" aria-label="Question editor panel">
@@ -274,6 +341,46 @@ Save Test
 </button>
 </div>
 </div>
+    <Modal 
+      :open="showGuide" 
+      title="Question JSON Template Guide" 
+      closeLabel="Close"
+      @modalClosed="showGuide = false"
+    >
+      <div class="guide-content">
+        <p>To upload questions, create a JSON file with an array of question objects. Here is an example structure:</p>
+        <pre class="code-block">
+[
+  {
+    "type": "multiple-choice",
+    "text": { "english": "What is 2+2?", "hindi": "2+2 क्या है?" },
+    "options": [
+      { "english": "3", "hindi": "3" },
+      { "english": "4", "hindi": "4" }
+    ],
+    "correctAnswer": 1,
+    "points": 1,
+    "negativeMarking": 0.25
+  },
+  {
+    "type": "true-false",
+    "text": { "english": "The sun rises in the east.", "hindi": "" },
+    "options": [],
+    "correctAnswer": "true",
+    "points": 1,
+    "negativeMarking": 0
+  }
+]
+        </pre>
+        <h4>Fields:</h4>
+        <ul>
+          <li><strong>type</strong>: 'multiple-choice', 'true-false', 'short-answer', or 'essay'</li>
+          <li><strong>text</strong>: Object with 'english' and/or 'hindi' keys</li>
+          <li><strong>options</strong>: Array of objects with 'english'/'hindi' keys (for multiple choice)</li>
+          <li><strong>correctAnswer</strong>: Index (0-based) for multiple choice, or "true"/"false" string for boolean</li>
+        </ul>
+      </div>
+    </Modal>
 </div>
 </template>
 
@@ -490,5 +597,51 @@ flex-direction: column;
 gap: 1rem;
 align-items: stretch;
 }
+}
+
+.tools-section {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: #f1f3f5;
+  border-radius: 8px;
+}
+
+.tool-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.text-btn {
+  background: transparent;
+  color: #007bff;
+  text-decoration: underline;
+  padding: 0.5rem;
+}
+
+.text-btn:hover {
+  color: #0056b3;
+  background: rgba(0, 123, 255, 0.1);
+}
+
+.guide-content {
+  padding: 1rem 0;
+}
+
+.code-block {
+  background: #2d2d2d;
+  color: #f8f8f2;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+
+.guide-content ul {
+  padding-left: 1.5rem;
+  line-height: 1.6;
 }
 </style>

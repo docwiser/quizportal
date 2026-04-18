@@ -52,8 +52,7 @@ class="notification-button"
 <p class="notification-date">
 {{ formatDateTime(selectedNotification.data?.updated || selectedNotification.data?.created) }}
 </p>
-<div v-if="selectedNotification.data?.body" class="notification-body">
-<p>{{ selectedNotification.data.body }}</p>
+<div v-if="selectedNotification.data?.body" class="notification-body" v-html="selectedNotification.data.body">
 </div>
 <ul
 v-if="Array.isArray(selectedNotification.data?.actions) && selectedNotification.data.actions.length > 0"
@@ -99,7 +98,13 @@ date = new Date(value.seconds * 1000);
 date = new Date(value);
 }
 if (!date || Number.isNaN(date.getTime())) return "Unknown";
-return date.toLocaleString();
+return date.toLocaleString("en-IN", {
+month: "long",
+day: "numeric",
+year: "numeric",
+hour: "2-digit",
+minute: "2-digit",
+});
 }
 function openNotification(notification) {
 selectedNotification.value = notification;

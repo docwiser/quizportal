@@ -28,14 +28,14 @@ type="button"
 <p v-if="selectedCourse.data?.summary"><strong>Summary:</strong> {{ selectedCourse.data.summary }}</p>
 <p v-if="selectedCourse.data?.startDate"><strong>Start:</strong> {{ formatDate(selectedCourse.data.startDate) }}</p>
 <p v-if="selectedCourse.data?.duration"><strong>Duration:</strong> {{ formatDate(selectedCourse.data.duration) }}</p>
-<div v-if="selectedCourse.data?.description">
-<strong>Description</strong>
-<p>{{ selectedCourse.data.description }}</p>
-</div>
+<div v-if="selectedCourse.data?.description" v-html="selectedCourse.data.description"></div>
+<div v-if="selectedCourse.data?.oneTimeFee"><strong>One-time enrollment fee:</strong>₹{{selectedCourse.data.oneTimeFee}}</div>
+<div v-if="selectedCourse.data?.courseFee"><strong>course fee:</strong>₹{{selectedCourse.data.courseFee}}</div>
 <PreviewPlayer v-if="selectedCourse?.data?.demoLink" :src="selectedCourse?.data?.demoLink" label="Play demo lecture" />
 <hr />
 <div v-if="appLoading" role="status" aria-live="polite">Checking application status…</div>
-<div v-if="!appLoading && application === null" class="apply-block" role="form" aria-live="polite">
+<div v-if="selectedCourse.data?.allowApplication == 'no'">currently, this course isnt allowing new admitions. check back later</div>
+<div v-if="!appLoading && selectedCourse.data?.allowApplication == 'yes' && application === null" class="apply-block" role="form" aria-live="polite">
 <p>
 <strong>Disclaimer:</strong>
 By submitting an application you request evaluation by academy staff. If approved, an appropriate batch will be assigned and you will receive email notification with next steps. Your student ID card for the course will be generated and delivered by email upon enrollment.
@@ -46,12 +46,12 @@ By submitting an application you request evaluation by academy staff. If approve
 </div>
 <div v-else-if="!appLoading && application?.status === 'pending'">
 <h2>In review.</h2>
-<p>you're request has been sent to the admin. you'll be added to a batch within 24 to 48 hours. if you were not added in this time, please contact <a role="button" href="ext:tel:9693939396">9693939396</a></p>
+<p>Thank you for your request! It has been forwarded to our administration team for processing. We expect to assign you to your appropriate batch within 24 to 48 business hours. This process ensures you gain access to your course materials and schedule. Should you not be added to a batch within the specified timeframe, please <a role="button" href="ext:https://wa.me/919693939396">reach out to us directly for assistance</a></p>
 <p v-if="application?.created"><strong>Applied:</strong> {{ formatDateTime(application.created) }}</p>
 </div>
 <div v-else-if="!appLoading && application?.status === 'approved'">
 <h2>Approved</h2>
-<p>Your application has been approved by the academy. you may access the course from your <RouterLink role="button" to="/courses">Study room</RouterLink>for any issues, Please Contact <a role="button" href="ext:tel:9693939396">9693939396</a></p>
+<p>Your application has been approved by the academy. you may access the course from your <RouterLink role="button" to="/courses">Study room</RouterLink>for any issues, Please Contact <a role="button" href="ext:https://wa.me/919693939396">9693939396</a></p>
 <p v-if="application?.created"><strong>Applied:</strong> {{ formatDateTime(application.created) }}</p>
 <p v-if="application?.updated"><strong>Approved:</strong> {{ formatDateTime(application.updated) }}</p>
 </div>
